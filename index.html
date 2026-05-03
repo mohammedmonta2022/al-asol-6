@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة الاختبارات التقويمية المباشرة</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Canvas Confetti for celebrations -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Animate.css -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, updateDoc, deleteDoc, addDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCA4tJeZiDUKqEezjlW8UPS9Xv-EnHfwrc",
+            authDomain: "unity-msaed.firebaseapp.com",
+            projectId: "unity-msaed",
+            storageBucket: "unity-msaed.firebasestorage.app",
+            messagingSenderId: "237281388685",
+            appId: "1:237281388685:web:41c7ea4078c2a5303b1ac4",
+            measurementId: "G-GDT44VHD9S"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const appId = "unity-msaed-app";
+        const ADMIN_NAME = "منتصر محمد راغب يونس";
+        const PASSING_SCORE = 25;
+
+        // State
+        let questions = [];
+        let allAttempts = [];
+        let currentStudentData = null;
+        let editingQuestionId = null;
+
+        const showView = (id) => {
+            document.querySelectorAll('.view').forEach(v => {
+                v.classList.add('hidden');
+                v.classList.remove('animate__animated', 'animate__fadeIn');
+            });
+            const target = document.getElementById(id);
+            target.classList.remove('hidden');
+            target.classList.add('animate__animated', 'animate__fadeIn');
+        };
+
+        window.onload = async () => {
+            await signInAnonymously(auth);
+            onAuthStateChanged(auth, (user) => {
+                initListeners();
+                lucide.createIcons();
+            });
+        };
+
+        function initListeners() {
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'questions'), (snap) => {
+                questions = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a,b) => (a.createdAt || 0) - (b.createdAt || 0));
+                renderAdminQuestions();
+            });
+
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'attempts'), (snap) => {
+                allAttempts = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderAdminResults();
+                renderAdminCurrently();
+            });
+        }
+
+        // Login
+        window.handleLogin = async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('studentName').value.trim();
+            if (!name) return;
+
+            if (name === ADMIN_NAME) {
+                showView('adminView');
+            } else {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'attempts', name);
+                const snap = await getDoc(docRef);
+                if (snap.exists()) {
+                    currentStudentData = snap.data();
+                    currentStudentData.finished ? showView('resultView') : (renderQuiz(), showView('quizView'));
+                    if(currentStudentData.finished) renderResult();
+                } else {
+                    currentStudentData = { name, score: 0, currentQuestionIndex: 0, finished: false, updatedAt: Date.now() };
+                    await setDoc(docRef, currentStudentData);
+                    renderQuiz();
+                    showView('quizView');
+                }
+            }
+        };
+
+        // Quiz Logic
+        let selectedOption = null;
+        let canAnswer = true;
+
+        function renderQuiz() {
+            canAnswer = true;
+            const q = questions[currentStudentData.currentQuestionIndex];
+            if (!q) return;
+
+            const container = document.getElementById('quizContainer');
+            container.classList.remove('animate__fadeOutLeft');
+            container.classList.add('animate__fadeInRight');
+
+            document.getElementById('qCount').innerText = `السؤال ${currentStudentData.currentQuestionIndex + 1} من ${questions.length}`;
+            document.getElementById('qText').innerText = q.text;
+            
+            const optsContainer = document.getElementById('optionsContainer');
+            optsContainer.innerHTML = q.options.map((opt, i) => `
+                <button onclick="selectOption(${i})" id="opt-${i}" class="option-btn w-full p-5 mb-3 border-2 border-slate-200 rounded-2xl text-right transition-all duration-200 hover:border-blue-400 flex justify-between items-center group">
+                    <span class="text-lg">${opt}</span>
+                    <div class="feedback-icon hidden"></div>
+                </button>
+            `).join('');
+            
+            selectedOption = null;
+            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('submitBtn').classList.add('opacity-50', 'scale-95');
+        }
+
+        window.selectOption = (i) => {
+            if (!canAnswer) return;
+            selectedOption = i;
+            document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('border-blue-500', 'bg-blue-50', 'ring-2', 'ring-blue-200'));
+            const btn = document.getElementById(`opt-${i}`);
+            btn.classList.add('border-blue-500', 'bg-blue-50', 'ring-2', 'ring-blue-200');
+            
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('opacity-50', 'scale-95');
+        };
+
+        window.submitAnswer = async () => {
+            if (!canAnswer || selectedOption === null) return;
+            canAnswer = false;
+            
+            const q = questions[currentStudentData.currentQuestionIndex];
+            const isCorrect = selectedOption === q.correct;
+            const btn = document.getElementById(`opt-${selectedOption}`);
+            const feedbackIcon = btn.querySelector('.feedback-icon');
+            feedbackIcon.classList.remove('hidden');
+
+            if (isCorrect) {
+                // Celebrate!
+                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+                btn.classList.add('bg-green-100', 'border-green-500', 'animate__animated', 'animate__pulse');
+                feedbackIcon.innerHTML = '<i data-lucide="check-circle-2" class="text-green-600"></i>';
+                currentStudentData.score += 5;
+            } else {
+                // Error Feedback
+                btn.classList.add('bg-red-100', 'border-red-500', 'animate__animated', 'animate__headShake');
+                feedbackIcon.innerHTML = '<i data-lucide="x-circle" class="text-red-600"></i>';
+                document.getElementById(`opt-${q.correct}`).classList.add('bg-green-50', 'border-green-500', 'border-dashed');
+            }
+            lucide.createIcons();
+
+            setTimeout(async () => {
+                const container = document.getElementById('quizContainer');
+                container.classList.remove('animate__fadeInRight');
+                container.classList.add('animate__fadeOutLeft');
+
+                setTimeout(async () => {
+                    const isLast = currentStudentData.currentQuestionIndex === questions.length - 1;
+                    currentStudentData.currentQuestionIndex++;
+                    if (isLast) currentStudentData.finished = true;
+                    currentStudentData.updatedAt = Date.now();
+
+                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'attempts', currentStudentData.name), currentStudentData);
+
+                    if (isLast) {
+                        renderResult();
+                        showView('resultView');
+                    } else {
+                        renderQuiz();
+                    }
+                }, 500);
+            }, 1800);
+        };
+
+        function renderResult() {
+            const isPass = currentStudentData.score >= PASSING_SCORE;
+            document.getElementById('resultStatus').innerText = isPass ? 'كفو! مبارك النجاح 🏆' : 'حظ أوفر، حاول مرة أخرى 🌸';
+            document.getElementById('finalScore').innerText = currentStudentData.score;
+            const iconBox = document.getElementById('resultIcon');
+            if (isPass) {
+                iconBox.innerHTML = '<div class="animate__animated animate__bounceIn"><i data-lucide="award" class="w-24 h-24 text-yellow-500"></i></div>';
+                confetti({ particleCount: 200, spread: 100, origin: { y: 0.5 } });
+            } else {
+                iconBox.innerHTML = '<div class="animate__animated animate__fadeIn"><i data-lucide="frown" class="w-24 h-24 text-slate-400"></i></div>';
+            }
+            lucide.createIcons();
+        }
+
+        // Admin Management
+        window.openEditModal = (id) => {
+            const q = questions.find(q => q.id === id);
+            if (!q) return;
+            editingQuestionId = id;
+            document.getElementById('editQText').value = q.text;
+            q.options.forEach((opt, i) => document.getElementById(`editOpt${i}`).value = opt);
+            document.getElementById('editCorrect').value = q.correct;
+            document.getElementById('editModal').classList.remove('hidden');
+            document.getElementById('editModal').classList.add('flex');
+        };
+
+        window.closeEditModal = () => {
+            document.getElementById('editModal').classList.add('hidden');
+            document.getElementById('editModal').classList.remove('flex');
+        };
+
+        window.saveEdit = async () => {
+            const updated = {
+                text: document.getElementById('editQText').value,
+                options: [
+                    document.getElementById('editOpt0').value,
+                    document.getElementById('editOpt1').value,
+                    document.getElementById('editOpt2').value,
+                    document.getElementById('editOpt3').value
+                ],
+                correct: parseInt(document.getElementById('editCorrect').value)
+            };
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'questions', editingQuestionId), updated);
+            closeEditModal();
+        };
+
+        function renderAdminQuestions() {
+            const container = document.getElementById('adminQuestionsList');
+            container.innerHTML = questions.map((q, i) => `
+                <div class="p-5 bg-white border border-slate-200 rounded-2xl mb-4 hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <span class="text-xs font-bold text-blue-500 uppercase tracking-wider">سؤال ${i+1}</span>
+                            <p class="font-bold text-slate-800 text-lg mt-1">${q.text}</p>
+                            <div class="grid grid-cols-2 gap-2 mt-3">
+                                ${q.options.map((o, idx) => `<div class="text-sm p-2 rounded ${idx === q.correct ? 'bg-green-50 text-green-700 font-bold border border-green-200' : 'bg-slate-50 text-slate-500'}">${o}</div>`).join('')}
+                            </div>
+                        </div>
+                        <div class="flex gap-2 mr-4">
+                            <button onclick="openEditModal('${q.id}')" class="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors"><i data-lucide="edit-3"></i></button>
+                            <button onclick="deleteQuestion('${q.id}')" class="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"><i data-lucide="trash-2"></i></button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        window.deleteQuestion = async (id) => {
+            if(confirm('سيتم حذف هذا السؤال نهائياً، هل أنت متأكد؟')) {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'questions', id));
+            }
+        };
+
+        function renderAdminResults() {
+            const container = document.getElementById('adminResultsTable');
+            const finished = allAttempts.filter(a => a.finished).sort((a,b) => b.score - a.score);
+            container.innerHTML = finished.map(a => `
+                <tr class="border-b hover:bg-slate-50 transition-colors">
+                    <td class="p-4 font-medium">${a.name}</td>
+                    <td class="p-4"><span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-bold">${a.score}</span></td>
+                    <td class="p-4">${a.score >= PASSING_SCORE ? '<span class="text-green-600">✅ ناجح</span>' : '<span class="text-red-500">❌ راسب</span>'}</td>
+                </tr>
+            `).join('') || '<tr><td colspan="3" class="p-8 text-center text-slate-400">لا توجد نتائج مكتملة بعد</td></tr>';
+        }
+
+        function renderAdminCurrently() {
+            const container = document.getElementById('adminCurrentStudents');
+            const active = allAttempts.filter(a => !a.finished);
+            container.innerHTML = active.map(a => `
+                <div class="bg-white p-4 rounded-2xl border border-blue-100 shadow-sm flex items-center gap-4 animate__animated animate__fadeIn">
+                    <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
+                        <i data-lucide="user"></i>
+                    </div>
+                    <div>
+                        <p class="font-bold text-slate-800">${a.name}</p>
+                        <p class="text-xs text-blue-500">في السؤال رقم ${a.currentQuestionIndex + 1}</p>
+                    </div>
+                </div>
+            `).join('') || '<div class="col-span-full text-center p-8 text-slate-400 border-2 border-dashed rounded-2xl">لا يوجد طلاب يختبرون حالياً</div>';
+            lucide.createIcons();
+        }
+
+        window.logout = () => location.reload();
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap');
+        body { font-family: 'Tajawal', sans-serif; overflow-x: hidden; }
+        .hidden { display: none; }
+        .view { min-height: 100vh; }
+        .option-btn:active { transform: scale(0.98); }
+        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+    </style>
+</head>
+<body class="bg-[#f8fafc] text-slate-900">
+
+    <!-- Login View -->
+    <div id="loginView" class="view flex items-center justify-center p-4">
+        <div class="bg-white p-10 rounded-[2.5rem] shadow-2xl w-full max-w-md border border-white animate__animated animate__zoomIn">
+            <div class="text-center mb-10">
+                <div class="bg-gradient-to-tr from-blue-600 to-indigo-600 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 text-white shadow-lg rotate-3">
+                    <i data-lucide="graduation-cap" class="w-10 h-10"></i>
+                </div>
+                <h1 class="text-3xl font-black text-slate-800">أهلاً بك</h1>
+                <p class="text-slate-500 mt-2">اختبار الأصول الستة - المرحلة الأولى</p>
+            </div>
+            <form onsubmit="handleLogin(event)" class="space-y-6">
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2 mr-1">الاسم الرباعي</label>
+                    <input type="text" id="studentName" required class="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-blue-500 focus:ring-4 focus:ring-blue-100 outline-none transition-all text-lg" placeholder="اكتب اسمك هنا...">
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-5 rounded-2xl font-bold text-xl hover:bg-blue-700 active:scale-95 transition-all shadow-lg shadow-blue-200 flex justify-center items-center gap-3">
+                    ابدأ الاختبار <i data-lucide="arrow-left"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Quiz View -->
+    <div id="quizView" class="view hidden p-4 md:p-8">
+        <div id="quizContainer" class="max-w-3xl mx-auto animate__animated">
+            <div class="glass p-8 rounded-[2.5rem] shadow-xl border border-white relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-2 bg-slate-100">
+                    <div id="progressBar" class="h-full bg-blue-600 transition-all duration-500" style="width: 0%"></div>
+                </div>
+                
+                <div class="flex justify-between items-center mb-10 mt-4">
+                    <div class="flex items-center gap-3">
+                        <span id="qCount" class="bg-blue-600 text-white px-5 py-2 rounded-2xl font-bold text-sm shadow-md">السؤال 1</span>
+                    </div>
+                    <button onclick="logout()" class="p-3 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all"><i data-lucide="log-out"></i></button>
+                </div>
+
+                <h2 id="qText" class="text-2xl md:text-3xl font-bold mb-10 leading-snug text-slate-800">...</h2>
+                
+                <div id="optionsContainer" class="space-y-4 mb-10"></div>
+                
+                <button id="submitBtn" onclick="submitAnswer()" disabled class="w-full py-5 bg-blue-600 text-white rounded-[1.5rem] font-bold text-xl transition-all shadow-lg shadow-blue-100">تأكيد الإجابة</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Result View -->
+    <div id="resultView" class="view hidden flex items-center justify-center p-4">
+        <div class="bg-white p-12 rounded-[3rem] shadow-2xl w-full max-w-xl text-center border border-slate-100 relative">
+            <div id="resultIcon" class="mb-8 flex justify-center"></div>
+            <h1 id="resultStatus" class="text-3xl font-black mb-4 text-slate-800">النتيجة</h1>
+            
+            <div class="bg-gradient-to-b from-slate-50 to-white p-8 rounded-[2rem] my-8 border border-slate-100">
+                <p class="text-slate-500 font-bold uppercase tracking-widest text-xs mb-2">درجتك النهائية</p>
+                <div id="finalScore" class="text-8xl font-black text-blue-600 tabular-nums">0</div>
+                <p class="text-slate-400 mt-2">من أصل 150 درجة</p>
+            </div>
+
+            <button onclick="logout()" class="w-full bg-slate-900 text-white py-5 rounded-2xl font-bold text-lg hover:bg-slate-800 transition-all">الخروج والعودة</button>
+        </div>
+    </div>
+
+    <!-- Admin View -->
+    <div id="adminView" class="view hidden p-4 md:p-8 bg-slate-50">
+        <div class="max-w-6xl mx-auto">
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 mb-8 flex justify-between items-center">
+                <div class="flex items-center gap-4">
+                    <div class="bg-blue-600 p-3 rounded-2xl text-white"><i data-lucide="layout-dashboard"></i></div>
+                    <h1 class="text-2xl font-black">لوحة تحكم المشرف</h1>
+                </div>
+                <button onclick="logout()" class="bg-red-50 text-red-600 px-6 py-3 rounded-xl font-bold hover:bg-red-100 transition-all">تسجيل خروج</button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <!-- Status -->
+                <div class="lg:col-span-8 space-y-8">
+                    <div class="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm">
+                        <h2 class="font-black text-xl mb-6 flex items-center gap-3"><i data-lucide="users" class="text-blue-600"></i> يختبرون الآن</h2>
+                        <div id="adminCurrentStudents" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                    </div>
+
+                    <div class="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="font-black text-xl flex items-center gap-3"><i data-lucide="list" class="text-blue-600"></i> قائمة الأسئلة</h2>
+                            <button onclick="seedOriginalQuestions()" class="text-sm bg-blue-50 text-blue-600 px-4 py-2 rounded-xl hover:bg-blue-100 font-bold">إعادة تعيين الأسئلة الأصلية</button>
+                        </div>
+                        <div id="adminQuestionsList"></div>
+                    </div>
+                </div>
+
+                <!-- Leaderboard -->
+                <div class="lg:col-span-4">
+                    <div class="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm sticky top-8">
+                        <h2 class="font-black text-xl mb-6 flex items-center gap-3"><i data-lucide="trophy" class="text-yellow-500"></i> قائمة المتصدرين</h2>
+                        <div class="overflow-hidden rounded-xl border border-slate-100">
+                            <table class="w-full text-right">
+                                <thead class="bg-slate-50"><tr class="text-slate-500 text-sm"><th class="p-4">الطالب</th><th class="p-4">الدرجة</th><th class="p-4">الحالة</th></tr></thead>
+                                <tbody id="adminResultsTable" class="text-sm"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm items-center justify-center p-4">
+        <div class="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl p-8 animate__animated animate__fadeInUp">
+            <h3 class="text-2xl font-black mb-6">تعديل السؤال</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold mb-1">نص السؤال</label>
+                    <textarea id="editQText" class="w-full p-4 bg-slate-50 border rounded-2xl h-24 outline-none focus:border-blue-500"></textarea>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div><label class="text-xs font-bold">خيار 1</label><input type="text" id="editOpt0" class="w-full p-3 bg-slate-50 border rounded-xl"></div>
+                    <div><label class="text-xs font-bold">خيار 2</label><input type="text" id="editOpt1" class="w-full p-3 bg-slate-50 border rounded-xl"></div>
+                    <div><label class="text-xs font-bold">خيار 3</label><input type="text" id="editOpt2" class="w-full p-3 bg-slate-50 border rounded-xl"></div>
+                    <div><label class="text-xs font-bold">خيار 4</label><input type="text" id="editOpt3" class="w-full p-3 bg-slate-50 border rounded-xl"></div>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold mb-1">الإجابة الصحيحة</label>
+                    <select id="editCorrect" class="w-full p-4 bg-slate-50 border rounded-2xl outline-none focus:border-blue-500">
+                        <option value="0">خيار 1</option><option value="1">خيار 2</option><option value="2">خيار 3</option><option value="3">خيار 4</option>
+                    </select>
+                </div>
+                <div class="flex gap-4 pt-4">
+                    <button onclick="saveEdit()" class="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-bold hover:bg-blue-700">حفظ التغييرات</button>
+                    <button onclick="closeEditModal()" class="flex-1 bg-slate-100 text-slate-600 py-4 rounded-2xl font-bold hover:bg-slate-200">إلغاء</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

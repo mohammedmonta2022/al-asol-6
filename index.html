@@ -291,32 +291,48 @@
             
             // قسم يختبرون الآن
             container.innerHTML = active.map(a => `
-                <div class="bg-white p-4 rounded-2xl border border-blue-100 shadow-sm flex items-center gap-4 animate__animated animate__fadeIn">
-                    <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
-                        <i data-lucide="user"></i>
+                <div class="bg-white p-4 rounded-2xl border border-blue-100 shadow-sm flex items-center justify-between animate__animated animate__fadeIn">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
+                            <i data-lucide="user"></i>
+                        </div>
+                        <div>
+                            <p class="font-bold text-slate-800">${a.name}</p>
+                            <p class="text-xs text-blue-500">في السؤال رقم ${a.currentQuestionIndex + 1}</p>
+                        </div>
                     </div>
-                    <div>
-                        <p class="font-bold text-slate-800">${a.name}</p>
-                        <p class="text-xs text-blue-500">في السؤال رقم ${a.currentQuestionIndex + 1}</p>
-                    </div>
+                    <button onclick="deleteStudent('${a.name}')" class="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors">
+                        <i data-lucide="trash-2"></i>
+                    </button>
                 </div>
             `).join('') || '<div class="col-span-full text-center p-8 text-slate-400 border-2 border-dashed rounded-2xl">لا يوجد طلاب يختبرون حالياً</div>';
             
             // قسم لم يكمل الاختبار
             incompleteContainer.innerHTML = incomplete.map(a => `
-                <div class="bg-white p-4 rounded-2xl border border-orange-100 shadow-sm flex items-center gap-4 animate__animated animate__fadeIn">
-                    <div class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-600">
-                        <i data-lucide="clock"></i>
+                <div class="bg-white p-4 rounded-2xl border border-orange-100 shadow-sm flex items-center justify-between animate__animated animate__fadeIn">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-600">
+                            <i data-lucide="clock"></i>
+                        </div>
+                        <div>
+                            <p class="font-bold text-slate-800">${a.name}</p>
+                            <p class="text-xs text-orange-500">توقف عند السؤال رقم ${a.currentQuestionIndex + 1}</p>
+                        </div>
                     </div>
-                    <div>
-                        <p class="font-bold text-slate-800">${a.name}</p>
-                        <p class="text-xs text-orange-500">توقف عند السؤال رقم ${a.currentQuestionIndex + 1}</p>
-                    </div>
+                    <button onclick="deleteStudent('${a.name}')" class="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors">
+                        <i data-lucide="trash-2"></i>
+                    </button>
                 </div>
             `).join('') || '<div class="col-span-full text-center p-8 text-slate-400 border-2 border-dashed rounded-2xl">جميع الطلاب أكملوا أو لم يبدأوا بعد</div>';
             
             lucide.createIcons();
         }
+
+        window.deleteStudent = async (name) => {
+            if(confirm(`هل أنت متأكد من حذف الطالب "${name}" وجميع بياناته؟`)) {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'attempts', name));
+            }
+        };
 
         window.logout = () => location.reload();
     </script>

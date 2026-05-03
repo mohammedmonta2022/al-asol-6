@@ -70,6 +70,13 @@
                 renderAdminResults();
                 renderAdminCurrently();
             });
+
+            // تحديث قائمة الطلاب غير النشطين كل دقيقة
+            setInterval(() => {
+                if(document.getElementById('adminView') && !document.getElementById('adminView').classList.contains('hidden')) {
+                    renderAdminCurrently();
+                }
+            }, 60000);
         }
 
         // Login
@@ -88,7 +95,7 @@
                     currentStudentData.finished ? showView('resultView') : (renderQuiz(), showView('quizView'));
                     if(currentStudentData.finished) renderResult();
                 } else {
-                    currentStudentData = { name, score: 0, currentQuestionIndex: 0, finished: false, updatedAt: Date.now() };
+                    currentStudentData = { name, score: 0, currentQuestionIndex: 0, finished: false, startedAt: Date.now(), updatedAt: Date.now() };
                     await setDoc(docRef, currentStudentData);
                     renderQuiz();
                     showView('quizView');
@@ -171,6 +178,7 @@
                     currentStudentData.currentQuestionIndex++;
                     if (isLast) currentStudentData.finished = true;
                     currentStudentData.updatedAt = Date.now();
+                    currentStudentData.lastActiveAt = Date.now();
 
                     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'attempts', currentStudentData.name), currentStudentData);
 
@@ -272,7 +280,16 @@
 
         function renderAdminCurrently() {
             const container = document.getElementById('adminCurrentStudents');
-            const active = allAttempts.filter(a => !a.finished);
+            const incompleteContainer = document.getElementById('adminIncompleteStudents');
+            
+            // الطلاب الذين يختبرون الآن (نشطين - لم ينتهوا)
+            const active = allAttempts.filter(a => !a.finished && a.currentQuestionIndex >= 0);
+            
+            // الطلاب الذين لم يكملوا الاختبار (بدأوا وتوقفوا لأكثر من 5 دقائق)
+            const fiveMinutesAgo = Date.now() - 300000;
+            const incomplete = allAttempts.filter(a => !a.finished && a.startedAt && (!a.lastActiveAt || a.lastActiveAt < fiveMinutesAgo));
+            
+            // قسم يختبرون الآن
             container.innerHTML = active.map(a => `
                 <div class="bg-white p-4 rounded-2xl border border-blue-100 shadow-sm flex items-center gap-4 animate__animated animate__fadeIn">
                     <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
@@ -284,6 +301,20 @@
                     </div>
                 </div>
             `).join('') || '<div class="col-span-full text-center p-8 text-slate-400 border-2 border-dashed rounded-2xl">لا يوجد طلاب يختبرون حالياً</div>';
+            
+            // قسم لم يكمل الاختبار
+            incompleteContainer.innerHTML = incomplete.map(a => `
+                <div class="bg-white p-4 rounded-2xl border border-orange-100 shadow-sm flex items-center gap-4 animate__animated animate__fadeIn">
+                    <div class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-600">
+                        <i data-lucide="clock"></i>
+                    </div>
+                    <div>
+                        <p class="font-bold text-slate-800">${a.name}</p>
+                        <p class="text-xs text-orange-500">توقف عند السؤال رقم ${a.currentQuestionIndex + 1}</p>
+                    </div>
+                </div>
+            `).join('') || '<div class="col-span-full text-center p-8 text-slate-400 border-2 border-dashed rounded-2xl">جميع الطلاب أكملوا أو لم يبدأوا بعد</div>';
+            
             lucide.createIcons();
         }
 
@@ -380,6 +411,11 @@
                     <div class="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm">
                         <h2 class="font-black text-xl mb-6 flex items-center gap-3"><i data-lucide="users" class="text-blue-600"></i> يختبرون الآن</h2>
                         <div id="adminCurrentStudents" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                    </div>
+
+                    <div class="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm">
+                        <h2 class="font-black text-xl mb-6 flex items-center gap-3"><i data-lucide="clock" class="text-orange-600"></i> لم يكمل الاختبار</h2>
+                        <div id="adminIncompleteStudents" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
                     </div>
 
                     <div class="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm">

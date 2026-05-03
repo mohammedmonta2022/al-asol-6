@@ -157,62 +157,78 @@
         };
 
         // عرض اختيار المسار
+        // عرض اختيار المسار كـ overlay
         function showTrackSelection(name, hasExistingData) {
             const trackSelectionHTML = `
-                <div class="bg-white p-10 rounded-[2.5rem] shadow-2xl w-full max-w-2xl border border-white animate__animated animate__zoomIn">
-                    <div class="text-center mb-10">
-                        <div class="bg-gradient-to-tr from-blue-600 to-indigo-600 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 text-white shadow-lg rotate-3">
-                            <i data-lucide="book-open" class="w-10 h-10"></i>
-                        </div>
-                        <h1 class="text-3xl font-black text-slate-800">أهلاً بك يا ${name}</h1>
-                        <p class="text-slate-500 mt-2">اختر نوع الاختبار الذي تريد البدء به</p>
-                    </div>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                        <!-- الأصول الستة -->
-                        <button onclick="selectTrack('six-roots')" class="p-6 border-2 border-blue-200 rounded-3xl hover:border-blue-600 hover:bg-blue-50 transition-all group text-right">
-                            <div class="flex items-center gap-4 mb-3">
-                                <div class="bg-blue-600 text-white p-3 rounded-2xl group-hover:scale-110 transition-transform">
-                                    <i data-lucide="book" class="w-6 h-6"></i>
-                                </div>
-                                <h3 class="font-bold text-xl text-slate-800">الأصول الستة</h3>
-                            </div>
-                            <p class="text-slate-500 text-sm">30 سؤال - 150 درجة</p>
-                            <p class="text-slate-400 text-xs mt-1">علامة النجاح: 25 درجة</p>
+                <div id="trackOverlay" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate__animated animate__fadeIn">
+                    <div class="bg-white p-10 rounded-[2.5rem] shadow-2xl w-full max-w-2xl border border-white animate__animated animate__zoomIn relative">
+                        <button onclick="closeTrackSelection()" class="absolute top-4 left-4 text-slate-400 hover:text-slate-600 transition-colors">
+                            <i data-lucide="x" class="w-6 h-6"></i>
                         </button>
                         
-                        <!-- الخاقانية -->
-                        <button onclick="selectTrack('alkhagania')" class="p-6 border-2 border-purple-200 rounded-3xl hover:border-purple-600 hover:bg-purple-50 transition-all group text-right">
-                            <div class="flex items-center gap-4 mb-3">
-                                <div class="bg-purple-600 text-white p-3 rounded-2xl group-hover:scale-110 transition-transform">
-                                    <i data-lucide="scroll" class="w-6 h-6"></i>
-                                </div>
-                                <h3 class="font-bold text-xl text-slate-800">الخاقانية</h3>
+                        <div class="text-center mb-10">
+                            <div class="bg-gradient-to-tr from-blue-600 to-indigo-600 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 text-white shadow-lg rotate-3">
+                                <i data-lucide="book-open" class="w-10 h-10"></i>
                             </div>
-                            <p class="text-slate-500 text-sm">40 سؤال - 200 درجة</p>
-                            <p class="text-slate-400 text-xs mt-1">علامة النجاح: 30 درجة</p>
+                            <h1 class="text-3xl font-black text-slate-800">أهلاً بك يا ${name}</h1>
+                            <p class="text-slate-500 mt-2">اختر نوع الاختبار الذي تريد البدء به</p>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                            <!-- الأصول الستة -->
+                            <button onclick="selectTrack('six-roots')" class="p-6 border-2 border-blue-200 rounded-3xl hover:border-blue-600 hover:bg-blue-50 transition-all group text-right">
+                                <div class="flex items-center gap-4 mb-3">
+                                    <div class="bg-blue-600 text-white p-3 rounded-2xl group-hover:scale-110 transition-transform">
+                                        <i data-lucide="book" class="w-6 h-6"></i>
+                                    </div>
+                                    <h3 class="font-bold text-xl text-slate-800">الأصول الستة</h3>
+                                </div>
+                                <p class="text-slate-500 text-sm">30 سؤال - 150 درجة</p>
+                                <p class="text-slate-400 text-xs mt-1">علامة النجاح: 25 درجة</p>
+                            </button>
+                            
+                            <!-- الخاقانية -->
+                            <button onclick="selectTrack('alkhagania')" class="p-6 border-2 border-purple-200 rounded-3xl hover:border-purple-600 hover:bg-purple-50 transition-all group text-right">
+                                <div class="flex items-center gap-4 mb-3">
+                                    <div class="bg-purple-600 text-white p-3 rounded-2xl group-hover:scale-110 transition-transform">
+                                        <i data-lucide="scroll" class="w-6 h-6"></i>
+                                    </div>
+                                    <h3 class="font-bold text-xl text-slate-800">الخاقانية</h3>
+                                </div>
+                                <p class="text-slate-500 text-sm">40 سؤال - 200 درجة</p>
+                                <p class="text-slate-400 text-xs mt-1">علامة النجاح: 30 درجة</p>
+                            </button>
+                        </div>
+                        
+                        ${hasExistingData ? `
+                            <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6">
+                                <p class="text-amber-800 text-sm flex items-center gap-2">
+                                    <i data-lucide="info" class="w-4 h-4"></i>
+                                    لديك محاولة سابقة غير مكتملة. يمكنك إكمالها أو بدء اختبار جديد.
+                                </p>
+                            </div>
+                        ` : ''}
+                        
+                        <button onclick="closeTrackSelection()" class="w-full bg-slate-100 text-slate-700 py-4 rounded-2xl font-bold hover:bg-slate-200 transition-all">
+                            رجوع
                         </button>
                     </div>
-                    
-                    ${hasExistingData ? `
-                        <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6">
-                            <p class="text-amber-800 text-sm flex items-center gap-2">
-                                <i data-lucide="info" class="w-4 h-4"></i>
-                                لديك محاولة سابقة غير مكتملة. يمكنك إكمالها أو بدء اختبار جديد.
-                            </p>
-                        </div>
-                    ` : ''}
-                    
-                    <button onclick="showView('loginView')" class="w-full bg-slate-100 text-slate-700 py-4 rounded-2xl font-bold hover:bg-slate-200 transition-all">
-                        رجوع
-                    </button>
                 </div>
             `;
             
-            const loginView = document.getElementById('loginView');
-            loginView.innerHTML = trackSelectionHTML;
+            document.body.insertAdjacentHTML('beforeend', trackSelectionHTML);
             lucide.createIcons();
         }
+        
+        // إغلاق اختيار المسار
+        window.closeTrackSelection = () => {
+            const overlay = document.getElementById('trackOverlay');
+            if (overlay) {
+                overlay.classList.remove('animate__fadeIn');
+                overlay.classList.add('animate__fadeOut');
+                setTimeout(() => overlay.remove(), 300);
+            }
+        };
 
         // اختيار المسار والبدء في الاختبار
         window.selectTrack = async (track) => {
@@ -239,6 +255,7 @@
             if (snap.exists() && snap.data().track === track && !snap.data().finished) {
                 // إكمال المحاولة السابقة
                 currentStudentData = snap.data();
+                closeTrackSelection();
                 renderQuiz();
                 showView('quizView');
             } else {
@@ -254,6 +271,7 @@
                     updatedAt: Date.now() 
                 };
                 await setDoc(docRef, currentStudentData);
+                closeTrackSelection();
                 renderQuiz();
                 showView('quizView');
             }

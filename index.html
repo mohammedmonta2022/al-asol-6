@@ -158,7 +158,10 @@
 
         // عرض اختيار المسار
         // عرض اختيار المسار كـ overlay
+        let currentStudentName = null; // متغير عام لحفظ اسم الطالب الحالي
+
         function showTrackSelection(name, hasExistingData) {
+            currentStudentName = name; // حفظ الاسم في المتغير العام
             const trackSelectionHTML = `
                 <div id="trackOverlay" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate__animated animate__fadeIn">
                     <div class="bg-white p-10 rounded-[2.5rem] shadow-2xl w-full max-w-2xl border border-white animate__animated animate__zoomIn relative">
@@ -233,7 +236,7 @@
         // اختيار المسار والبدء في الاختبار
         window.selectTrack = async (track) => {
             selectedTrack = track;
-            const name = document.getElementById('studentName')?.value.trim() || currentStudentData?.name;
+            const name = currentStudentName || document.getElementById('studentName')?.value.trim() || currentStudentData?.name;
             
             if (!name) return;
             

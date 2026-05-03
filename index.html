@@ -236,9 +236,15 @@
         // اختيار المسار والبدء في الاختبار
         window.selectTrack = async (track) => {
             selectedTrack = track;
-            const name = currentStudentName || document.getElementById('studentName')?.value.trim() || currentStudentData?.name;
             
-            if (!name) return;
+            // استخدام الاسم المحفوظ فقط - لا نحاول القراءة من DOM مرة أخرى
+            const name = currentStudentName;
+            
+            if (!name) {
+                console.error('لا يوجد اسم طالب محفوظ');
+                closeTrackSelection();
+                return;
+            }
             
             const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'attempts', name);
             

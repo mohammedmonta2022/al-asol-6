@@ -40,6 +40,55 @@
         let allAttempts = [];
         let currentStudentData = null;
         let editingQuestionId = null;
+        let selectedTrack = null; // 'six-roots' أو 'alkhagania'
+
+        // أسئلة الخاقانية (40 سؤال)
+        const alkhaganiaQuestions = [
+            // القسم الأول: المعارف التاريخية والمنهجية
+            { id: "kh1", text: "من هو العالم الذي يعتبر تاريخياً \"أول من صنف في التجويد\" بشكل مستقل من خلال منظومته المشهورة؟", options: ["الإمام الشاطبي", "الإمام أبو مزاحم الخاقاني", "الإمام ابن الجزري", "الإمام الداني"], correct: 1, track: "alkhagania" },
+            { id: "kh2", text: "ما هو البحر الشعري الذي اختاره الخاقاني لمنظومته، وبماذا تميزت قافيتها؟", options: ["بحر الرجز، قافية النون", "بحر الطويل، قافية الراء المكسورة", "بحر البسيط، قافية الميم", "بحر الكامل، قافية اللام"], correct: 1, track: "alkhagania" },
+            { id: "kh3", text: "في أي عام هجري توفي الإمام الخاقاني، وما هي المدينة التي احتضنت نشاطه العلمي؟", options: ["248 هـ، مكة المكرمة", "325 هـ، بغداد", "444 هـ، الأندلس", "390 هـ، البصرة"], correct: 1, track: "alkhagania" },
+            { id: "kh4", text: "ما المقصود بمصطلح \"أولي الحجر\" في مطلع القصيدة: \"أقول مقالاً معجباً لأولي الحجر\"؟", options: ["أصحاب القوة والبطش", "أصحاب العقول والنهى", "الحفاظ الصغار في السن", "سكان المناطق الجبلية"], correct: 1, track: "alkhagania" },
+            { id: "kh5", text: "استهل الخاقاني منظومته بالاستعاذة من آفتين قلبيتين، فما هما؟", options: ["الرياء والسمعة", "المباهاة والفخر", "الكذب والبهتان", "الحسد والحقد"], correct: 1, track: "alkhagania" },
+            { id: "kh6", text: "ذكر الخاقاني أن \"أخذ القراءة سنة"، فماذا قصد بذلك؟", options: ["أنها مستحبة وليست واجبة", "أنها مأخوذة بالتلقي والمشافهة عن الأولين", "أنها تابعة لاجتهاد القارئ الشخصي", "أنها تقرأ في صلاة السنة فقط"], correct: 1, track: "alkhagania" },
+            { id: "kh7", text: "من هو الإمام الذي خصه الخاقاني بلقب \"أخو الحذق بالقرآن والنحو والشعر\"؟", options: ["الإمام نافع", "الإمام عاصم", "الإمام الكسائي", "الإمام حمزة"], correct: 2, track: "alkhagania" },
+            { id: "kh8", text: "كم عدد أبيات المنظومة كما نص عليها صاحبها في متن القصيدة؟", options: ["أربعون بيتاً", "خمسون بيتاً", "واحد وخمسون بيتاً", "ستون بيتاً"], correct: 2, track: "alkhagania" },
+            { id: "kh9", text: "ما هي المرتبة التي اعتبرها الخاقاني \"أفضل\" للقراءة نظراً لما فيها من مكث وفكر؟", options: ["الحدر", "الترتيل", "التدوير", "الزمزمة"], correct: 1, track: "alkhagania" },
+            { id: "kh10", text: "رخص الخاقاني في مرتبة \"الحدر\" بشرط معين، فما هو؟", options: ["أن تكون القراءة في الصلاة الجهرية", "أن تكون في مقام الدرس والمراجعة تيسيراً على العباد", "أن تكون قراءة أمام العوام", "ألا تتجاوز سورة الفاتحة"], correct: 1, track: "alkhagania" },
+            // القسم الثاني: فقه الأداء والمصطلحات الصوتية
+            { id: "kh11", text: "ما المقصود بلفظ \"القدح\" في قول الناظم: \"ومن يقم القرآن كالقدح فليكن\"؟", options: ["الإناء الذي يشرب فيه الماء", "السهم المستوي قبل أن يراش", "الجبل المرتفع", "الميزان الدقيق"], correct: 1, track: "alkhagania" },
+            { id: "kh12", text: "ما هي الفائدة التي يجنيها القارئ من \"إدمان الدرس\" كما ذكر الخاقاني؟", options: ["الشهرة والمكانة الاجتماعية", "ترقيق اللسان وإذهاب أذى الصدر", "معرفة التفاسير الغريبة", "كسب المال والرزق"], correct: 1, track: "alkhagania" },
+            { id: "kh13", text: "ماذا قصد الخاقاني بـ \"التحقيق\" في مقام الأخذ عن الشيوخ؟", options: ["التأكد من صحة السند", "إعطاء الحروف حقوقها ببطء وإتقان شديد", "البحث في معاني الآيات", "القراءة بسرعة الحدر"], correct: 1, track: "alkhagania" },
+            { id: "kh14", text: "\"وإن الذي تخفيه ليس بمدغم"، ما الحكم التجويدي الذي تشير إليه هذه العبارة؟", options: ["الإظهار المطلق", "الإخفاء الحقيقي", "الإدغام الناقص", "القلب"], correct: 1, track: "alkhagania" },
+            { id: "kh15", text: "ما المقصود بـ \"الجزم\" في قوله: \"وقل إن تسكين الحروف لجزمها\"؟", options: ["القطع في المسائل الفقهية", "السكون التجويدي", "التوكيد بالنون", "الوقف الاختياري"], correct: 1, track: "alkhagania" },
+            { id: "kh16", text: "ما هو \"حرف اللين\" في اصطلاح الخاقاني القديم؟", options: ["الواو والياء الساكنتان المفتوح ما قبلهما", "حروف المد الثلاثة", "حروف الحلق الستة", "حروف الإدغام بغير غنة"], correct: 1, track: "alkhagania" },
+            { id: "kh17", text: "\"ولا تفرطن في الفتح والضم والكسر"، ما الذي يحذر منه الخاقاني هنا؟", options: ["ترك الحركات بالكلية", "المبالغة في الحركة حتى يتولد منها حرف مد زائد", "القراءة ببطء شديد", "نسيان علامات الإعراب"], correct: 1, track: "alkhagania" },
+            { id: "kh18", text: "ما هو \"النبر\" الذي حذر الخاقاني من الهمز عنده في البيت 35؟", options: ["النطق بالحرف المشدد", "الهمزة أو الضغط الصوتي الذي قد يولد همزة غير أصلية", "رفع الصوت في نهاية الآية", "المد العارض للسكون"], correct: 1, track: "alkhagania" },
+            { id: "kh19", text: "طالب الخاقاني بـ \"إنعام بيان\" حرفين معينين لتداخلهما أو خفائهما، ما هما؟", options: ["النون والميم", "الراء واللام", "العين والهاء", "السين والصاد"], correct: 2, track: "alkhagania" },
+            { id: "kh20", text: "ما هو التوجيه الذي قدمه الخاقاني بخصوص الوقف في القراءة؟", options: ["الوقف عند رأس كل آية مهما كان المعنى", "الوقف عند إتمام الكلام موافقاً للمصحف المتلو", "الوقف بعد كل كلمة طويلة", "عدم الوقف إلا عند انتهاء النفس"], correct: 1, track: "alkhagania" },
+            // القسم الثالث: الأحكام الدقيقة واللطائف اللغوية
+            { id: "kh21", text: "حذر الخاقاني من تشديد النون في موضع معين، ما هو؟", options: ["النون المشددة الأصلية", "النون المظهرة عند حروف الحلق", "نون الجمع في نهاية الكلم", "نون التوكيد الخفيفة"], correct: 1, track: "alkhagania" },
+            { id: "kh22", text: "ماذا قصد الخاقاني بـ \"إشباع الضم قبل الواو\" في \"إياك نعبد وإياك\"؟", options: ["مدها مداً طويلاً كمد المنفصل", "إتمام الحركة بحيث لا تختلس ولا تذهب بجمال الأداء", "تحويلها إلى فتحة عند الوصل", "تسكين الدال للراحة"], correct: 1, track: "alkhagania" },
+            { id: "kh23", text: "علل الخاقاني مد \"ولا الضالين\" بعلة صوتية معينة، ما هي؟", options: ["لأنها في نهاية سورة الفاتحة", "لأن الساكنين تلاقيا فصار المد كتحريك للساكن الأول", "لأنها قراءة عاصم وحده", "لأن الألف حرف قوي"], correct: 1, track: "alkhagania" },
+            { id: "kh24", text: "ذكر الخاقاني حروف الحلق الستة، فما هو الحكم التجويدي للنون قبلها؟", options: ["الإخفاء", "الإدغام", "الإظهار (البيان)", "القلب"], correct: 2, track: "alkhagania" },
+            { id: "kh25", text: "ما معنى كلمة \"ينذرب\" في قوله: \"ورقق بيان الراء واللام ينذرب لسانك\"؟", options: ["يثقل ويتلعثم", "يحدّ ويصبح بليغاً فصيحاً", "يرتجف ويهتز", "يختفي صوته"], correct: 1, track: "alkhagania" },
+            { id: "kh26", text: "ما هو \"القياس\" الذي ذكره الخاقاني بخصوص التنوين في البيت 48؟", options: ["قياس التنوين على حكم النون الساكنة", "قياس القرآن على كلام العرب", "قياس المد الطويل على المد القصير", "قياس مخارج الحروف على بعضها"], correct: 0, track: "alkhagania" },
+            { id: "kh27", text: "ما الحكم الذي نبه عليه الخاقاني عند التقاء الميم بحرف غيرها؟", options: ["وجوب الإدغام الشفوي", "عدم إدغام الميم وقبول العلم بالشكر (الإظهار الشفوي)", "وجوب الإخفاء الشفوي دائماً", "التشديد المفرط للميم"], correct: 1, track: "alkhagania" },
+            { id: "kh28", text: "طلب الخاقاني من طلابه الدعاء له في وقت محدد، فما هو وما رمزيته؟", options: ["وقت الظهر؛ رمزاً لانتشار العلم", "لدى الفجر؛ رمزاً لوقت الإجابة والبركة", "عند الغروب؛ رمزاً للتواضع", "يوم الجمعة؛ رمزاً للاجتماع"], correct: 1, track: "alkhagania" },
+            { id: "kh29", text: "كيف وصف الخاقاني تأثير \"إدمان الدرس\" على صوت القارئ؟", options: ["يجعله غليظاً قوياً", "يرقق اللسان ويجعله عذباً بالتلاوة", "يجعله سريعاً جداً في الكلام", "يقلل من جودة صوته"], correct: 1, track: "alkhagania" },
+            { id: "kh30", text: "\"ففي شربة لو كان علمي سقيتكم"، ما هي اللطيفة التربوية في هذا البيت؟", options: ["أن العلم مر المذاق كالدواء", "حب الناظم لتلاميذه ورغبته في بذل العلم بسهولة ويسر", "أن العلم يحتاج لشرب الكثير من الماء", "أن العلم مخزون في الكؤوس"], correct: 1, track: "alkhagania" },
+            // القسم الرابع: تطبيقات تحليلية وربط منهجي
+            { id: "kh31", text: "أي من القراء السبعة ذكر الخاقاني أنه \"بالشام\"؟", options: ["ابن كثير", "ابن عامر", "أبو عمرو بن العلاء", "عاصم الكوفي"], correct: 1, track: "alkhagania" },
+            { id: "kh32", text: "ما هو الركن الذي شدد عليه الخاقاني في قوله: \"فما كل من يتلو الكتاب يقيمه\"؟", options: ["ركن الحفظ الغيبي فقط", "ركن إقامة حدود الحروف وحقوقها (التجويد العملي)", "ركن كثرة القراءة ليل نهار", "ركن القراءة بصوت مرتفع"], correct: 1, track: "alkhagania" },
+            { id: "kh33", text: "\"زن الحرف لا تخرجه عن حد وزنه"، ما هو \"الميزان\" المقصود هنا؟", options: ["ميزان العروض والقوافي", "ميزان صفات الحروف ومخارجها المقدرة", "ميزان عدد الصفحات اليومية", "ميزان سرعة القراءة"], correct: 1, track: "alkhagania" },
+            { id: "kh34", text: "حذر الخاقاني من \"اللحن\" وذكر أنه \"ما للذي لا يعرف اللحن من عذر"، فما هو اللحن المقصود؟", options: ["النغمات الموسيقية", "الخطأ في التلاوة (الجلي والخفي)", "سرعة القراءة الزائدة", "الوقف القبيح فقط"], correct: 1, track: "alkhagania" },
+            { id: "kh35", text: "ما هي \"حروف الحلق الستة\" بالترتيب الذي يمكن استنتاجه من منظومة الخاقاني؟", options: ["الحاء، الخاء، الهاء، الهمزة، العين، الغين", "الهمزة، الهاء، العين، الحاء، الغين، الخاء", "النون، الميم، اللام، الراء، الدال، التاء", "الألف، الواو، الياء، العين، الحاء، الغين"], correct: 0, track: "alkhagania" },
+            { id: "kh36", text: "ماذا يقصد الخاقاني بـ \"إتمام الكلام\" عند الوقف؟", options: ["الانتهاء من السورة كاملة", "الوقوف على معنى مفيد تام لا يتعلق بما بعده لفظاً", "الوقف عند انتهاء السطر في المصحف", "الوقف على كلمة \"آمين\""], correct: 1, track: "alkhagania" },
+            { id: "kh37", text: "\"فوزن حروف الذكر من أفضل البر"، ما هي الدلالة الشرعية لهذا البيت؟", options: ["أن التجويد نافلة لا يثاب عليها", "أن إتقان قراءة القرآن وتجويده من أعظم القربات إلى الله", "أن القراءة لا تحتاج إلى نية", "أن البر يقتصر على الصدقة فقط"], correct: 1, track: "alkhagania" },
+            { id: "kh38", text: "أي من المصطلحات التالية استخدمه الخاقاني للتعبير عن الحركة الإعرابية \"الكسرة\"؟", options: ["النصب", "الجر", "الرفع", "الخفض"], correct: 1, track: "alkhagania" },
+            { id: "kh39", text: "ماذا قصد الخاقاني بـ \"تسكين الحروف لجزمها\"؟", options: ["الجزم في القول", "أن علامة الجزم الأصلية في اللغة هي السكون", "وجوب الوقف على كل كلمة مجزومة", "ترك الغنة في النون المجزومة"], correct: 1, track: "alkhagania" },
+            { id: "kh40", text: "\"فلابن عبيد الله موسى على الذي يعلمه الخير الدعاء لدى الفجر"، من هو ابن عبيد الله؟", options: ["أحد القراء السبعة", "الناظم نفسه (أبو مزاحم الخاقاني)", "تلميذ الناظم المفضل", "الخليفة العباسي في ذلك الوقت"], correct: 1, track: "alkhagania" }
+        ];
 
         const showView = (id) => {
             document.querySelectorAll('.view').forEach(v => {
@@ -92,14 +141,121 @@
                 const snap = await getDoc(docRef);
                 if (snap.exists()) {
                     currentStudentData = snap.data();
-                    currentStudentData.finished ? showView('resultView') : (renderQuiz(), showView('quizView'));
-                    if(currentStudentData.finished) renderResult();
+                    if (currentStudentData.finished) {
+                        renderResult();
+                        showView('resultView');
+                    } else {
+                        // طالب كان يختبر من قبل - اسأله هل يكمل أم يغير المسار
+                        selectedTrack = currentStudentData.track || 'six-roots';
+                        showTrackSelection(name, true);
+                    }
                 } else {
-                    currentStudentData = { name, score: 0, currentQuestionIndex: 0, finished: false, startedAt: Date.now(), updatedAt: Date.now() };
-                    await setDoc(docRef, currentStudentData);
-                    renderQuiz();
-                    showView('quizView');
+                    // طالب جديد - اختر المسار أولاً
+                    showTrackSelection(name, false);
                 }
+            }
+        };
+
+        // عرض اختيار المسار
+        function showTrackSelection(name, hasExistingData) {
+            const trackSelectionHTML = `
+                <div class="bg-white p-10 rounded-[2.5rem] shadow-2xl w-full max-w-2xl border border-white animate__animated animate__zoomIn">
+                    <div class="text-center mb-10">
+                        <div class="bg-gradient-to-tr from-blue-600 to-indigo-600 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 text-white shadow-lg rotate-3">
+                            <i data-lucide="book-open" class="w-10 h-10"></i>
+                        </div>
+                        <h1 class="text-3xl font-black text-slate-800">أهلاً بك يا ${name}</h1>
+                        <p class="text-slate-500 mt-2">اختر نوع الاختبار الذي تريد البدء به</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <!-- الأصول الستة -->
+                        <button onclick="selectTrack('six-roots')" class="p-6 border-2 border-blue-200 rounded-3xl hover:border-blue-600 hover:bg-blue-50 transition-all group text-right">
+                            <div class="flex items-center gap-4 mb-3">
+                                <div class="bg-blue-600 text-white p-3 rounded-2xl group-hover:scale-110 transition-transform">
+                                    <i data-lucide="book" class="w-6 h-6"></i>
+                                </div>
+                                <h3 class="font-bold text-xl text-slate-800">الأصول الستة</h3>
+                            </div>
+                            <p class="text-slate-500 text-sm">30 سؤال - 150 درجة</p>
+                            <p class="text-slate-400 text-xs mt-1">علامة النجاح: 25 درجة</p>
+                        </button>
+                        
+                        <!-- الخاقانية -->
+                        <button onclick="selectTrack('alkhagania')" class="p-6 border-2 border-purple-200 rounded-3xl hover:border-purple-600 hover:bg-purple-50 transition-all group text-right">
+                            <div class="flex items-center gap-4 mb-3">
+                                <div class="bg-purple-600 text-white p-3 rounded-2xl group-hover:scale-110 transition-transform">
+                                    <i data-lucide="scroll" class="w-6 h-6"></i>
+                                </div>
+                                <h3 class="font-bold text-xl text-slate-800">الخاقانية</h3>
+                            </div>
+                            <p class="text-slate-500 text-sm">40 سؤال - 200 درجة</p>
+                            <p class="text-slate-400 text-xs mt-1">علامة النجاح: 30 درجة</p>
+                        </button>
+                    </div>
+                    
+                    ${hasExistingData ? `
+                        <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6">
+                            <p class="text-amber-800 text-sm flex items-center gap-2">
+                                <i data-lucide="info" class="w-4 h-4"></i>
+                                لديك محاولة سابقة غير مكتملة. يمكنك إكمالها أو بدء اختبار جديد.
+                            </p>
+                        </div>
+                    ` : ''}
+                    
+                    <button onclick="showView('loginView')" class="w-full bg-slate-100 text-slate-700 py-4 rounded-2xl font-bold hover:bg-slate-200 transition-all">
+                        رجوع
+                    </button>
+                </div>
+            `;
+            
+            const loginView = document.getElementById('loginView');
+            loginView.innerHTML = trackSelectionHTML;
+            lucide.createIcons();
+        }
+
+        // اختيار المسار والبدء في الاختبار
+        window.selectTrack = async (track) => {
+            selectedTrack = track;
+            const name = document.getElementById('studentName')?.value.trim() || currentStudentData?.name;
+            
+            if (!name) return;
+            
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'attempts', name);
+            
+            // تحديد الأسئلة بناءً على المسار
+            if (track === 'alkhagania') {
+                questions = alkhaganiaQuestions;
+            } else {
+                // جلب أسئلة الأصول الستة من قاعدة البيانات
+                const qSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'questions', 'original'));
+                if (qSnap.exists()) {
+                    questions = qSnap.data().items || [];
+                }
+            }
+            
+            // التحقق من وجود محاولة سابقة
+            const snap = await getDoc(docRef);
+            if (snap.exists() && snap.data().track === track && !snap.data().finished) {
+                // إكمال المحاولة السابقة
+                currentStudentData = snap.data();
+                renderQuiz();
+                showView('quizView');
+            } else {
+                // بدء محاولة جديدة
+                currentStudentData = { 
+                    name, 
+                    track,
+                    score: 0, 
+                    currentQuestionIndex: 0, 
+                    finished: false, 
+                    startedAt: Date.now(), 
+                    lastActiveAt: Date.now(),
+                    updatedAt: Date.now() 
+                };
+                await setDoc(docRef, currentStudentData);
+                renderQuiz();
+                showView('quizView');
             }
         };
 
@@ -193,9 +349,19 @@
         };
 
         function renderResult() {
-            const isPass = currentStudentData.score >= PASSING_SCORE;
+            const totalScore = currentStudentData.track === 'alkhagania' ? 200 : 150;
+            const passingScore = currentStudentData.track === 'alkhagania' ? 30 : 25;
+            const isPass = currentStudentData.score >= passingScore;
+            
             document.getElementById('resultStatus').innerText = isPass ? 'كفو! مبارك النجاح 🏆' : 'حظ أوفر، حاول مرة أخرى 🌸';
             document.getElementById('finalScore').innerText = currentStudentData.score;
+            
+            // تحديث النص أسفل الدرجة
+            const scoreLabel = document.querySelector('#finalScore + p');
+            if (scoreLabel) {
+                scoreLabel.innerText = `من أصل ${totalScore} درجة`;
+            }
+            
             const iconBox = document.getElementById('resultIcon');
             if (isPass) {
                 iconBox.innerHTML = '<div class="animate__animated animate__bounceIn"><i data-lucide="award" class="w-24 h-24 text-yellow-500"></i></div>';
@@ -269,13 +435,16 @@
         function renderAdminResults() {
             const container = document.getElementById('adminResultsTable');
             const finished = allAttempts.filter(a => a.finished).sort((a,b) => b.score - a.score);
-            container.innerHTML = finished.map(a => `
+            container.innerHTML = finished.map(a => {
+                const trackIcon = a.track === 'alkhagania' ? '📜' : '📖';
+                const passingScore = a.track === 'alkhagania' ? 30 : 25;
+                return `
                 <tr class="border-b hover:bg-slate-50 transition-colors">
-                    <td class="p-4 font-medium">${a.name}</td>
+                    <td class="p-4 font-medium">${trackIcon} ${a.name}</td>
                     <td class="p-4"><span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-bold">${a.score}</span></td>
-                    <td class="p-4">${a.score >= PASSING_SCORE ? '<span class="text-green-600">✅ ناجح</span>' : '<span class="text-red-500">❌ راسب</span>'}</td>
+                    <td class="p-4">${a.score >= passingScore ? '<span class="text-green-600">✅ ناجح</span>' : '<span class="text-red-500">❌ راسب</span>'}</td>
                 </tr>
-            `).join('') || '<tr><td colspan="3" class="p-8 text-center text-slate-400">لا توجد نتائج مكتملة بعد</td></tr>';
+            `}).join('') || '<tr><td colspan="3" class="p-8 text-center text-slate-400">لا توجد نتائج مكتملة بعد</td></tr>';
         }
 
         function renderAdminCurrently() {
@@ -290,40 +459,46 @@
             const incomplete = allAttempts.filter(a => !a.finished && a.startedAt && (!a.lastActiveAt || a.lastActiveAt < fiveMinutesAgo));
             
             // قسم يختبرون الآن
-            container.innerHTML = active.map(a => `
+            container.innerHTML = active.map(a => {
+                const trackIcon = a.track === 'alkhagania' ? '📜' : '📖';
+                const trackName = a.track === 'alkhagania' ? 'الخاقانية' : 'الأصول الستة';
+                return `
                 <div class="bg-white p-4 rounded-2xl border border-blue-100 shadow-sm flex items-center justify-between animate__animated animate__fadeIn">
                     <div class="flex items-center gap-4">
                         <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
                             <i data-lucide="user"></i>
                         </div>
                         <div>
-                            <p class="font-bold text-slate-800">${a.name}</p>
-                            <p class="text-xs text-blue-500">في السؤال رقم ${a.currentQuestionIndex + 1}</p>
+                            <p class="font-bold text-slate-800">${trackIcon} ${a.name}</p>
+                            <p class="text-xs text-blue-500">${trackName} - السؤال رقم ${a.currentQuestionIndex + 1}</p>
                         </div>
                     </div>
                     <button onclick="deleteStudent('${a.name}')" class="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors">
                         <i data-lucide="trash-2"></i>
                     </button>
                 </div>
-            `).join('') || '<div class="col-span-full text-center p-8 text-slate-400 border-2 border-dashed rounded-2xl">لا يوجد طلاب يختبرون حالياً</div>';
+            `}).join('') || '<div class="col-span-full text-center p-8 text-slate-400 border-2 border-dashed rounded-2xl">لا يوجد طلاب يختبرون حالياً</div>';
             
             // قسم لم يكمل الاختبار
-            incompleteContainer.innerHTML = incomplete.map(a => `
+            incompleteContainer.innerHTML = incomplete.map(a => {
+                const trackIcon = a.track === 'alkhagania' ? '📜' : '📖';
+                const trackName = a.track === 'alkhagania' ? 'الخاقانية' : 'الأصول الستة';
+                return `
                 <div class="bg-white p-4 rounded-2xl border border-orange-100 shadow-sm flex items-center justify-between animate__animated animate__fadeIn">
                     <div class="flex items-center gap-4">
                         <div class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-600">
                             <i data-lucide="clock"></i>
                         </div>
                         <div>
-                            <p class="font-bold text-slate-800">${a.name}</p>
-                            <p class="text-xs text-orange-500">توقف عند السؤال رقم ${a.currentQuestionIndex + 1}</p>
+                            <p class="font-bold text-slate-800">${trackIcon} ${a.name}</p>
+                            <p class="text-xs text-orange-500">${trackName} - توقف عند السؤال رقم ${a.currentQuestionIndex + 1}</p>
                         </div>
                     </div>
                     <button onclick="deleteStudent('${a.name}')" class="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors">
                         <i data-lucide="trash-2"></i>
                     </button>
                 </div>
-            `).join('') || '<div class="col-span-full text-center p-8 text-slate-400 border-2 border-dashed rounded-2xl">جميع الطلاب أكملوا أو لم يبدأوا بعد</div>';
+            `}).join('') || '<div class="col-span-full text-center p-8 text-slate-400 border-2 border-dashed rounded-2xl">جميع الطلاب أكملوا أو لم يبدأوا بعد</div>';
             
             lucide.createIcons();
         }

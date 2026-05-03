@@ -131,28 +131,55 @@
         // Login
         window.handleLogin = async (e) => {
             e.preventDefault();
-            const name = document.getElementById('studentName').value.trim();
-            if (!name) return;
+            const nameInput = document.getElementById('studentName');
+            if (!nameInput) {
+                console.error('لم يتم العثور على حقل اسم الطالب');
+                return;
+            }
+            const name = nameInput.value.trim();
+            if (!name) {
+                alert('الرجاء كتابة الاسم الرباعي');
+                return;
+            }
+
+            console.log('جاري تسجيل الدخول باسم:', name);
 
             if (name === ADMIN_NAME) {
+                console.log('دخول المشرف');
                 showView('adminView');
-            } else {
+                // دوال العرض موجودة بالفعل في initListeners
+                return;
+            }
+
+            // حفظ الاسم في المتغير العام قبل أي عملية غير متزامنة
+            currentStudentName = name;
+            console.log('تم حفظ اسم الطالب:', currentStudentName);
+
+            try {
                 const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'attempts', name);
                 const snap = await getDoc(docRef);
+                
                 if (snap.exists()) {
                     currentStudentData = snap.data();
+                    console.log('تم العثور على محاولة سابقة:', currentStudentData);
                     if (currentStudentData.finished) {
                         renderResult();
                         showView('resultView');
                     } else {
                         // طالب كان يختبر من قبل - اسأله هل يكمل أم يغير المسار
                         selectedTrack = currentStudentData.track || 'six-roots';
+                        console.log('عرض اختيار المسار للإكمال');
                         showTrackSelection(name, true);
                     }
                 } else {
                     // طالب جديد - اختر المسار أولاً
+                    console.log('طالب جديد، عرض اختيار المسار');
                     showTrackSelection(name, false);
                 }
+            } catch (error) {
+                console.error('خطأ في التحقق من المحاولة:', error);
+                // في حالة الخطأ، نعرض اختيار المسار كحل بديل
+                showTrackSelection(name, false);
             }
         };
 

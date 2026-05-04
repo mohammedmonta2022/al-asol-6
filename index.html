@@ -104,11 +104,27 @@
         window.showView = showView;
         window.renderQuiz = renderQuiz;
         window.renderResult = renderResult;
+        window.handleLogin = handleLogin;
+        window.showTrackSelection = showTrackSelection;
+        window.closeTrackSelection = closeTrackSelection;
+        window.selectTrack = selectTrack;
+        window.selectOption = selectOption;
+        window.submitAnswer = submitAnswer;
+        window.openEditModal = openEditModal;
+        window.closeEditModal = closeEditModal;
+        window.saveEdit = saveEdit;
+        window.deleteQuestion = deleteQuestion;
+        window.deleteStudent = deleteStudent;
+        window.logout = logout;
+        window.renderAdminQuestions = renderAdminQuestions;
+        window.renderAdminResults = renderAdminResults;
+        window.renderAdminCurrently = renderAdminCurrently;
 
-        window.onload = async () => {
-            await signInAnonymously(auth);
-            onAuthStateChanged(auth, (user) => {
+        window.onload = () => {
+            // تهيئة Firebase Auth والاستماع لتغيرات حالة المصادقة
+            onAuthStateChanged(auth, async (user) => {
                 if (user) {
+                    console.log('تم تسجيل الدخول بنجاح، UID:', user.uid);
                     initListeners();
                     lucide.createIcons();
                     
@@ -116,6 +132,23 @@
                     const loginForm = document.getElementById('loginForm');
                     if (loginForm) {
                         loginForm.addEventListener('submit', handleLogin);
+                    }
+                } else {
+                    console.log('جاري تسجيل الدخول المجهول...');
+                    try {
+                        await signInAnonymously(auth);
+                        console.log('تم تسجيل الدخول المجهول بنجاح');
+                    } catch (error) {
+                        console.error('فشل تسجيل الدخول المجهول:', error);
+                        // حتى لو فشل التسجيل المجهول، نستمر في تهيئة التطبيق
+                        // لأن بعض العمليات قد تعمل بدون مصادقة
+                        initListeners();
+                        lucide.createIcons();
+                        
+                        const loginForm = document.getElementById('loginForm');
+                        if (loginForm) {
+                            loginForm.addEventListener('submit', handleLogin);
+                        }
                     }
                 }
             });
@@ -142,7 +175,7 @@
         }
 
         // Login
-        window.handleLogin = async (e) => {
+        async function handleLogin(e) {
             e.preventDefault();
             const nameInput = document.getElementById('studentName');
             if (!nameInput) {
@@ -202,8 +235,6 @@
         // عرض اختيار المسار كـ overlay
         let currentStudentName = null; // متغير عام لحفظ اسم الطالب الحالي
         
-        window.showTrackSelection = showTrackSelection;
-
         function showTrackSelection(name, hasExistingData) {
             currentStudentName = name; // حفظ الاسم في المتغير العام
             const trackSelectionHTML = `
@@ -268,7 +299,7 @@
         }
         
         // إغلاق اختيار المسار
-        window.closeTrackSelection = () => {
+        function closeTrackSelection() {
             const overlay = document.getElementById('trackOverlay');
             if (overlay) {
                 overlay.classList.remove('animate__fadeIn');
@@ -278,7 +309,7 @@
         };
 
         // اختيار المسار والبدء في الاختبار
-        window.selectTrack = async (track) => {
+        async function selectTrack(track) {
             selectedTrack = track;
             
             // استخدام الاسم المحفوظ فقط - لا نحاول القراءة من DOM مرة أخرى
@@ -359,7 +390,7 @@
             document.getElementById('submitBtn').classList.add('opacity-50', 'scale-95');
         }
 
-        window.selectOption = (i) => {
+        function selectOption(i) {
             if (!canAnswer) return;
             selectedOption = i;
             document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('border-blue-500', 'bg-blue-50', 'ring-2', 'ring-blue-200'));
@@ -369,9 +400,9 @@
             const submitBtn = document.getElementById('submitBtn');
             submitBtn.disabled = false;
             submitBtn.classList.remove('opacity-50', 'scale-95');
-        };
+        }
 
-        window.submitAnswer = async () => {
+        async function submitAnswer() {
             if (!canAnswer || selectedOption === null) return;
             canAnswer = false;
             
@@ -444,7 +475,7 @@
         }
 
         // Admin Management
-        window.openEditModal = (id) => {
+        function openEditModal(id) {
             const q = questions.find(q => q.id === id);
             if (!q) return;
             editingQuestionId = id;
@@ -455,12 +486,12 @@
             document.getElementById('editModal').classList.add('flex');
         };
 
-        window.closeEditModal = () => {
+        function closeEditModal() {
             document.getElementById('editModal').classList.add('hidden');
             document.getElementById('editModal').classList.remove('flex');
         };
 
-        window.saveEdit = async () => {
+        async function saveEdit() {
             const updated = {
                 text: document.getElementById('editQText').value,
                 options: [
@@ -497,7 +528,7 @@
             lucide.createIcons();
         }
 
-        window.deleteQuestion = async (id) => {
+        async function deleteQuestion(id) {
             if(confirm('سيتم حذف هذا السؤال نهائياً، هل أنت متأكد؟')) {
                 await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'questions', id));
             }
@@ -574,13 +605,15 @@
             lucide.createIcons();
         }
 
-        window.deleteStudent = async (name) => {
+        async function deleteStudent(name) {
             if(confirm(`هل أنت متأكد من حذف الطالب "${name}" وجميع بياناته؟`)) {
                 await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'attempts', name));
             }
-        };
+        }
 
-        window.logout = () => location.reload();
+        function logout() {
+            location.reload();
+        }
     </script>
 
     <style>

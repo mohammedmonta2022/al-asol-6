@@ -116,6 +116,7 @@
         window.deleteQuestion = deleteQuestion;
         window.deleteStudent = deleteStudent;
         window.logout = logout;
+        window.seedOriginalQuestions = seedOriginalQuestions;
         window.renderAdminQuestions = renderAdminQuestions;
         window.renderAdminResults = renderAdminResults;
         window.renderAdminCurrently = renderAdminCurrently;
@@ -388,6 +389,8 @@
             selectedOption = null;
             document.getElementById('submitBtn').disabled = true;
             document.getElementById('submitBtn').classList.add('opacity-50', 'scale-95');
+            
+            lucide.createIcons();
         }
 
         function selectOption(i) {
@@ -608,6 +611,35 @@
         async function deleteStudent(name) {
             if(confirm(`هل أنت متأكد من حذف الطالب "${name}" وجميع بياناته؟`)) {
                 await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'attempts', name));
+            }
+        }
+
+        // دالة إعادة تعيين الأسئلة الأصلية
+        async function seedOriginalQuestions() {
+            if(confirm('سيتم إعادة تعيين الأسئلة الأصلية، هل أنت متأكد؟')) {
+                try {
+                    const originalQuestions = [
+                        { id: 'q1', text: 'ما هو أول ما نزل من القرآن الكريم؟', options: ['سورة الفاتحة', 'أول خمس آيات من سورة العلق', 'سورة المدثر', 'سورة المزمل'], correct: 1, track: 'six-roots' },
+                        { id: 'q2', text: 'كم عدد القراء المتواترين؟', options: ['سبعة', 'عشرة', 'أربعة', 'ثلاثة'], correct: 0, track: 'six-roots' },
+                        { id: 'q3', text: 'من هو الإمام الذي روى قراءة عاصم؟', options: ['شعبة وحفص', 'قالون ورورش', 'الدوري والسوسي', 'خلف وحمزة'], correct: 0, track: 'six-roots' },
+                        { id: 'q4', text: 'ما هي قراءة أهل المدينة؟', options: ['قراءة نافع', 'قراءة ابن كثير', 'قراءة أبي عمرو', 'قراءة حمزة'], correct: 0, track: 'six-roots' },
+                        { id: 'q5', text: 'كم عدد أوجه القراءة للمتواترين؟', options: ['10', '7', '14', '8'], correct: 0, track: 'six-roots' },
+                        { id: 'q6', text: 'من هو الراوي الثاني عن عاصم؟', options: ['حفص', 'شعبة', 'قالون', 'ورش'], correct: 1, track: 'six-roots' },
+                        { id: 'q7', text: 'أي القراءات تعتبر قراءة أهل مكة؟', options: ['قراءة ابن كثير', 'قراءة نافع', 'قراءة عاصم', 'قراءة الكسائي'], correct: 0, track: 'six-roots' },
+                        { id: 'q8', text: 'من هو إمام قراء البصرة؟', options: ['أبو عمرو بن العلاء', 'نافع', 'عاصم', 'ابن عامر'], correct: 0, track: 'six-roots' },
+                        { id: 'q9', text: 'كم عدد الروايات الصحيحة عن كل قارئ؟', options: ['روايتان', 'رواية واحدة', 'ثلاث روايات', 'أربع روايات'], correct: 0, track: 'six-roots' },
+                        { id: 'q10', text: 'من هو راوي قراءة نافع المدني؟', options: ['قالون ورورش', 'حفص وشعبة', 'الدوري والسوسي', 'خلف وحمزة'], correct: 0, track: 'six-roots' }
+                    ];
+                    
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'questions', 'original'), {
+                        items: originalQuestions,
+                        updatedAt: Date.now()
+                    });
+                    alert('تم إعادة تعيين الأسئلة الأصلية بنجاح!');
+                } catch (error) {
+                    console.error('خطأ في إعادة التعيين:', error);
+                    alert('حدث خطأ أثناء إعادة التعيين');
+                }
             }
         }
 

@@ -1,0 +1,1860 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة الاختبارات التعليمية</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 900px;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .quiz-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-right: 5px solid #667eea;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .quiz-card:hover {
+            transform: translateX(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .quiz-card h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .quiz-card .new-badge {
+            background: #ff6b6b;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+
+        .progress-bar {
+            background: #e0e0e0;
+            border-radius: 10px;
+            height: 10px;
+            margin-top: 15px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100%;
+            transition: width 0.3s;
+        }
+
+        .question-container {
+            margin-bottom: 30px;
+        }
+
+        .question-text {
+            font-size: 1.3em;
+            color: #333;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        .options {
+            display: grid;
+            gap: 15px;
+        }
+
+        .option {
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+        }
+
+        .option:hover {
+            border-color: #667eea;
+            background: #f0f0ff;
+        }
+
+        .option.selected {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+
+        .option.correct {
+            border-color: #4caf50;
+            background: #4caf50;
+            color: white;
+            animation: celebrate 0.5s ease;
+        }
+
+        .option.incorrect {
+            border-color: #f44336;
+            background: #f44336;
+            color: white;
+            animation: shake 0.5s ease;
+        }
+
+        @keyframes celebrate {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-card .value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-card .label {
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .students-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .students-table th,
+        .students-table td {
+            padding: 15px;
+            text-align: right;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .students-table th {
+            background: #f8f9fa;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .students-table tr:hover {
+            background: #f0f0ff;
+        }
+
+        .admin-panel {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .admin-panel h3 {
+            color: #856404;
+            margin-bottom: 20px;
+        }
+
+        .file-upload {
+            border: 2px dashed #667eea;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .file-upload:hover {
+            background: #f0f0ff;
+            border-color: #764ba2;
+        }
+
+        .file-upload input {
+            display: none;
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            z-index: 1000;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        .timer {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .result-screen {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .result-screen .score {
+            font-size: 4em;
+            font-weight: bold;
+            color: #667eea;
+            margin: 20px 0;
+        }
+
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background: #f00;
+            animation: fall linear forwards;
+        }
+
+        @keyframes fall {
+            to {
+                transform: translateY(100vh) rotate(720deg);
+            }
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .nav-buttons .btn {
+            flex: 1;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .btn-success {
+            background: #28a745;
+        }
+
+        .stopped-list {
+            background: #f8d7da;
+            border: 2px solid #f5c6cb;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .stopped-list h4 {
+            color: #721c24;
+            margin-bottom: 15px;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 منصة الاختبارات التعليمية</h1>
+            <p id="welcomeText">مرحباً بك في منصة الاختبارات</p>
+        </div>
+
+        <div class="content">
+            <!-- صفحة تسجيل الدخول -->
+            <div id="loginPage">
+                <div class="form-group">
+                    <label for="fullName">الاسم الرباعي (إلزامي)</label>
+                    <input type="text" id="fullName" placeholder="أدخل اسمك الرباعي كاملاً" required>
+                </div>
+                <button class="btn" onclick="handleLogin()">تسجيل الدخول</button>
+            </div>
+
+            <!-- الصفحة الرئيسية -->
+            <div id="homePage" class="hidden">
+                <div id="adminPanel" class="admin-panel hidden">
+                    <h3>🎯 لوحة المشرف</h3>
+                    <div class="form-group">
+                        <label>إضافة قسم جديد (ملف JSON)</label>
+                        <div class="file-upload" onclick="document.getElementById('jsonFile').click()">
+                            <p>📁 اضغط لرفع ملف JSON</p>
+                            <p style="font-size: 12px; color: #666;">يجب أن يحتوي على: name, questions[]</p>
+                            <input type="file" id="jsonFile" accept=".json" onchange="handleFileUpload(event)">
+                        </div>
+                    </div>
+                    <div id="adminActions" class="hidden">
+                        <h4 style="margin: 20px 0 10px;">إدارة الأقسام</h4>
+                        <div id="adminSectionsList"></div>
+                    </div>
+                </div>
+
+                <div id="studentStats" class="stats-grid hidden">
+                    <div class="stat-card">
+                        <div class="value" id="completedCount">0</div>
+                        <div class="label">اختبارات مكتملة</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="value" id="averageScore">0%</div>
+                        <div class="label">متوسط الدرجات</div>
+                    </div>
+                </div>
+
+                <h2 style="margin-bottom: 20px; color: #333;">الاختبارات المتاحة</h2>
+                <div id="quizzesList"></div>
+
+                <div id="stoppedStudents" class="stopped-list hidden">
+                    <h4>⏸️ الطلاب الذين توقفوا عن الاختبار</h4>
+                    <div id="stoppedList"></div>
+                </div>
+            </div>
+
+            <!-- صفحة الاختبار -->
+            <div id="quizPage" class="hidden">
+                <div class="timer" id="timer">00:00</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressBar" style="width: 0%"></div>
+                </div>
+                <p style="text-align: center; margin-top: 10px; color: #666;">
+                    سؤال <span id="currentQuestionNum">1</span> من <span id="totalQuestions">0</span>
+                </p>
+                
+                <div class="question-container">
+                    <div class="question-text" id="questionText"></div>
+                    <div class="options" id="optionsContainer"></div>
+                </div>
+
+                <div class="nav-buttons">
+                    <button class="btn btn-secondary" onclick="prevQuestion()" id="prevBtn">السابق</button>
+                    <button class="btn" onclick="nextQuestion()" id="nextBtn">التالي</button>
+                    <button class="btn btn-success hidden" onclick="submitQuiz()" id="submitBtn">إنهاء الاختبار</button>
+                </div>
+            </div>
+
+            <!-- صفحة النتائج -->
+            <div id="resultPage" class="hidden">
+                <div class="result-screen">
+                    <h2>🎉 نتائج الاختبار</h2>
+                    <div class="score" id="finalScore">0%</div>
+                    <p id="resultMessage"></p>
+                    <div class="stats-grid" style="margin-top: 30px;">
+                        <div class="stat-card">
+                            <div class="value" id="correctAnswers">0</div>
+                            <div class="label">إجابات صحيحة</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="value" id="wrongAnswers">0</div>
+                            <div class="label">إجابات خاطئة</div>
+                        </div>
+                    </div>
+                    <button class="btn" onclick="retakeQuiz()" id="retakeBtn">إعادة الاختبار</button>
+                    <button class="btn btn-secondary" onclick="showHomePage()" style="margin-top: 15px;">العودة للرئيسية</button>
+                </div>
+            </div>
+
+            <!-- صفحة إدارة الأسئلة للمشرف -->
+            <div id="manageQuestionsPage" class="hidden">
+                <button class="btn btn-secondary" onclick="showHomePage()" style="margin-bottom: 20px;">← العودة</button>
+                <h2 id="manageTitle" style="margin-bottom: 20px;"></h2>
+                <div id="questionsEditor"></div>
+                <button class="btn btn-success" onclick="saveQuestions()" style="margin-top: 20px;">حفظ التغييرات</button>
+            </div>
+
+            <!-- صفحة عرض الطلاب ونتائجهم -->
+            <div id="studentsResultsPage" class="hidden">
+                <button class="btn btn-secondary" onclick="showHomePage()" style="margin-bottom: 20px;">← العودة</button>
+                <h2 style="margin-bottom: 20px;">📊 نتائج الطلاب</h2>
+                <table class="students-table">
+                    <thead>
+                        <tr>
+                            <th>الاسم</th>
+                            <th>الدرجة</th>
+                            <th>التاريخ</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentsResultsBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // تهيئة Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCA4tJeZiDUKqEezjlW8UPS9Xv-EnHfwrc",
+            authDomain: "unity-msaed.firebaseapp.com",
+            projectId: "unity-msaed",
+            storageBucket: "unity-msaed.firebasestorage.app",
+            messagingSenderId: "237281388685",
+            appId: "1:237281388685:web:41c7ea4078c2a5303b1ac4",
+            measurementId: "G-GDT44VHD9S"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // المتغيرات العامة
+        let currentUser = null;
+        let currentQuiz = null;
+        let currentQuestionIndex = 0;
+        let userAnswers = {};
+        let timerInterval = null;
+        let startTime = null;
+        let isAdmin = false;
+
+        // أسئلة الخاقانية
+        const khaganiyaQuestions = [
+            {
+                question: "من هو العالم الذي يعتبر تاريخياً \"أول من صنف في التجويد\" بشكل مستقل من خلال منظومته المشهورة؟",
+                options: ["الإمام الشاطبي", "الإمام أبو مزاحم الخاقاني", "الإمام ابن الجزري", "الإمام الداني"],
+                correct: 1
+            },
+            {
+                question: "ما هو البحر الشعري الذي اختاره الخاقاني لمنظومته، وبماذا تميزت قافيتها؟",
+                options: ["بحر الرجز، قافية النون", "بحر الطويل، قافية الراء المكسورة", "بحر البسيط، قافية الميم", "بحر الكامل، قافية اللام"],
+                correct: 1
+            },
+            {
+                question: "في أي عام هجري توفي الإمام الخاقاني، وما هي المدينة التي احتضنت نشاطه العلمي؟",
+                options: ["248 هـ، مكة المكرمة", "325 هـ، بغداد", "444 هـ، الأندلس", "390 هـ، البصرة"],
+                correct: 1
+            },
+            {
+                question: "ما المقصود بمصطلح \"أولي الحجر\" في مطلع القصيدة: \"أقول مقالاً معجباً لأولي الحجر\"؟",
+                options: ["أصحاب القوة والبطش", "أصحاب العقول والنهى", "الحفاظ الصغار في السن", "سكان المناطق الجبلية"],
+                correct: 1
+            },
+            {
+                question: "استهل الخاقاني منظومته بالاستعاذة من آفتين قلبيتين، فما هما؟",
+                options: ["الرياء والسمعة", "المباهاة والفخر", "الكذب والبهتان", "الحسد والحقد"],
+                correct: 1
+            },
+            {
+                question: "ذكر الخاقاني أن \"أخذ القراءة سنة"، فماذا قصد بذلك؟",
+                options: ["أنها مستحبة وليست واجبة", "أنها مأخوذة بالتلقي والمشافهة عن الأولين", "أنها تابعة لاجتهاد القارئ الشخصي", "أنها تقرأ في صلاة السنة فقط"],
+                correct: 1
+            },
+            {
+                question: "من هو الإمام الذي خصه الخاقاني بلقب \"أخو الحذق بالقرآن والنحو والشعر\"؟",
+                options: ["الإمام نافع", "الإمام عاصم", "الإمام الكسائي", "الإمام حمزة"],
+                correct: 2
+            },
+            {
+                question: "كم عدد أبيات المنظومة كما نص عليها صاحبها في متن القصيدة؟",
+                options: ["أربعون بيتاً", "خمسون بيتاً", "واحد وخمسون بيتاً", "ستون بيتاً"],
+                correct: 2
+            },
+            {
+                question: "ما هي المرتبة التي اعتبرها الخاقاني \"أفضل\" للقراءة نظراً لما فيها من مكث وفكر؟",
+                options: ["الحدر", "الترتيل", "التدوير", "الزمزمة"],
+                correct: 1
+            },
+            {
+                question: "رخص الخاقاني في مرتبة \"الحدر\" بشرط معين، فما هو؟",
+                options: ["أن تكون القراءة في الصلاة الجهرية", "أن تكون في مقام الدرس والمراجعة تيسيراً على العباد", "أن تكون قراءة أمام العوام", "ألا تتجاوز سورة الفاتحة"],
+                correct: 1
+            },
+            {
+                question: "ما المقصود بلفظ \"القدح\" في قول الناظم: \"ومن يقم القرآن كالقدح فليكن\"؟",
+                options: ["الإناء الذي يشرب فيه الماء", "السهم المستوي قبل أن يراش", "الجبل المرتفع", "الميزان الدقيق"],
+                correct: 1
+            },
+            {
+                question: "ما هي الفائدة التي يجنيها القارئ من \"إدمان الدرس\" كما ذكر الخاقاني؟",
+                options: ["الشهرة والمكانة الاجتماعية", "ترقيق اللسان وإذهاب أذى الصدر", "معرفة التفاسير الغريبة", "كسب المال والرزق"],
+                correct: 1
+            },
+            {
+                question: "ماذا قصد الخاقاني بـ \"التحقيق\" في مقام الأخذ عن الشيوخ؟",
+                options: ["التأكد من صحة السند", "إعطاء الحروف حقوقها ببطء وإتقان شديد", "البحث في معاني الآيات", "القراءة بسرعة الحدر"],
+                correct: 1
+            },
+            {
+                question: "\"وإن الذي تخفيه ليس بمدغم"، ما الحكم التجويدي الذي تشير إليه هذه العبارة؟",
+                options: ["الإظهار المطلق", "الإخفاء الحقيقي", "الإدغام الناقص", "القلب"],
+                correct: 1
+            },
+            {
+                question: "ما المقصود بـ \"الجزم\" في قوله: \"وقل إن تسكين الحروف لجزمها\"؟",
+                options: ["القطع في المسائل الفقهية", "السكون التجويدي", "التوكيد بالنون", "الوقف الاختياري"],
+                correct: 1
+            },
+            {
+                question: "ما هو \"حرف اللين\" في اصطلاح الخاقاني القديم؟",
+                options: ["الواو والياء الساكنتان المفتوح ما قبلهما", "حروف المد الثلاثة", "حروف الحلق الستة", "حروف الإدغام بغير غنة"],
+                correct: 1
+            },
+            {
+                question: "\"ولا تفرطن في الفتح والضم والكسر"، ما الذي يحذر منه الخاقاني هنا؟",
+                options: ["ترك الحركات بالكلية", "المبالغة في الحركة حتى يتولد منها حرف مد زائد", "القراءة ببطء شديد", "نسيان علامات الإعراب"],
+                correct: 1
+            },
+            {
+                question: "ما هو \"النبر\" الذي حذر الخاقاني من الهمز عنده في البيت 35؟",
+                options: ["النطق بالحرف المشدد", "الهمزة أو الضغط الصوتي الذي قد يولد همزة غير أصلية", "رفع الصوت في نهاية الآية", "المد العارض للسكون"],
+                correct: 1
+            },
+            {
+                question: "طالب الخاقاني بـ \"إنعام بيان\" حرفين معينين لتداخلهما أو خفائهما، ما هما؟",
+                options: ["النون والميم", "الراء واللام", "العين والهاء", "السين والصاد"],
+                correct: 2
+            },
+            {
+                question: "ما هو التوجيه الذي قدمه الخاقاني بخصوص الوقف في القراءة؟",
+                options: ["الوقف عند رأس كل آية مهما كان المعنى", "الوقف عند إتمام الكلام موافقاً للمصحف المتلو", "الوقف بعد كل كلمة طويلة", "عدم الوقف إلا عند انتهاء النفس"],
+                correct: 1
+            },
+            {
+                question: "حذر الخاقاني من تشديد النون في موضع معين، ما هو؟",
+                options: ["النون المشددة الأصلية", "النون المظهرة عند حروف الحلق", "نون الجمع في نهاية الكلم", "نون التوكيد الخفيفة"],
+                correct: 1
+            },
+            {
+                question: "ماذا قصد الخاقاني بـ \"إشباع الضم قبل الواو\" في \"إياك نعبد وإياك\"؟",
+                options: ["مدها مداً طويلاً كمد المنفصل", "إتمام الحركة بحيث لا تختلس ولا تذهب بجمال الأداء", "تحويلها إلى فتحة عند الوصل", "تسكين الدال للراحة"],
+                correct: 1
+            },
+            {
+                question: "علل الخاقاني مد \"ولا الضالين\" بعلة صوتية معينة، ما هي؟",
+                options: ["لأنها في نهاية سورة الفاتحة", "لأن الساكنين تلاقيا فصار المد كتحريك للساكن الأول", "لأنها قراءة عاصم وحده", "لأن الألف حرف قوي"],
+                correct: 1
+            },
+            {
+                question: "ذكر الخاقاني حروف الحلق الستة، فما هو الحكم التجويدي للنون قبلها؟",
+                options: ["الإخفاء", "الإدغام", "الإظهار (البيان)", "القلب"],
+                correct: 2
+            },
+            {
+                question: "ما معنى كلمة \"ينذرب\" في قوله: \"ورقق بيان الراء واللام ينذرب لسانك\"؟",
+                options: ["يثقل ويتلعثم", "يحدّ ويصبح بليغاً فصيحاً", "يرتجف ويهتز", "يختفي صوته"],
+                correct: 1
+            },
+            {
+                question: "ما هو \"القياس\" الذي ذكره الخاقاني بخصوص التنوين في البيت 48؟",
+                options: ["قياس التنوين على حكم النون الساكنة", "قياس القرآن على كلام العرب", "قياس المد الطويل على المد القصير", "قياس مخارج الحروف على بعضها"],
+                correct: 0
+            },
+            {
+                question: "ما الحكم الذي نبه عليه الخاقاني عند التقاء الميم بحرف غيرها؟",
+                options: ["وجوب الإدغام الشفوي", "عدم إدغام الميم وقبول العلم بالشكر (الإظهار الشفوي)", "وجوب الإخفاء الشفوي دائماً", "التشديد المفرط للميم"],
+                correct: 1
+            },
+            {
+                question: "طلب الخاقاني من طلابه الدعاء له في وقت محدد، فما هو وما رمزيته؟",
+                options: ["وقت الظهر؛ رمزاً لانتشار العلم", "لدى الفجر؛ رمزاً لوقت الإجابة والبركة", "عند الغروب؛ رمزاً للتواضع", "يوم الجمعة؛ رمزاً للاجتماع"],
+                correct: 1
+            },
+            {
+                question: "كيف وصف الخاقاني تأثير \"إدمان الدرس\" على صوت القارئ؟",
+                options: ["يجعله غليظاً قوياً", "يرقق اللسان ويجعله عذباً بالتلاوة", "يجعله سريعاً جداً في الكلام", "يقلل من جودة صوته"],
+                correct: 1
+            },
+            {
+                question: "\"ففي شربة لو كان علمي سقيتكم"، ما هي اللطيفة التربوية في هذا البيت؟",
+                options: ["أن العلم مر المذاق كالدواء", "حب الناظم لتلاميذه ورغبته في بذل العلم بسهولة ويسر", "أن العلم يحتاج لشرب الكثير من الماء", "أن العلم مخزون في الكؤوس"],
+                correct: 1
+            },
+            {
+                question: "أي من القراء السبعة ذكر الخاقاني أنه \"بالشام\"؟",
+                options: ["ابن كثير", "ابن عامر", "أبو عمرو بن العلاء", "عاصم الكوفي"],
+                correct: 1
+            },
+            {
+                question: "ما هو الركن الذي شدد عليه الخاقاني في قوله: \"فما كل من يتلو الكتاب يقيمه\"؟",
+                options: ["ركن الحفظ الغيبي فقط", "ركن إقامة حدود الحروف وحقوقها (التجويد العملي)", "ركن كثرة القراءة ليل نهار", "ركن القراءة بصوت مرتفع"],
+                correct: 1
+            },
+            {
+                question: "\"زن الحرف لا تخرجه عن حد وزنه"، ما هو \"الميزان\" المقصود هنا؟",
+                options: ["ميزان العروض والقوافي", "ميزان صفات الحروف ومخارجها المقدرة", "ميزان عدد الصفحات اليومية", "ميزان سرعة القراءة"],
+                correct: 1
+            },
+            {
+                question: "حذر الخاقاني من \"اللحن\" وذكر أنه \"ما للذي لا يعرف اللحن من عذر"، فما هو اللحن المقصود؟",
+                options: ["النغمات الموسيقية", "الخطأ في التلاوة (الجلي والخفي)", "سرعة القراءة الزائدة", "الوقف القبيح فقط"],
+                correct: 1
+            },
+            {
+                question: "ما هي \"حروف الحلق الستة\" بالترتيب الذي يمكن استنتاجه من منظومة الخاقاني؟",
+                options: ["الحاء، الخاء، الهاء، الهمزة، العين، الغين", "الهمزة، الهاء، العين، الحاء، الغين، الخاء", "النون، الميم، اللام، الراء، الدال، التاء", "الألف، الواو، الياء، العين، الحاء، الغين"],
+                correct: 0
+            },
+            {
+                question: "ماذا يقصد الخاقاني بـ \"إتمام الكلام\" عند الوقف؟",
+                options: ["الانتهاء من السورة كاملة", "الوقوف على معنى مفيد تام لا يتعلق بما بعده لفظاً", "الوقوف عند انتهاء السطر في المصحف", "الوقوف على كلمة \"آمين\""],
+                correct: 1
+            },
+            {
+                question: "\"فوزن حروف الذكر من أفضل البر"، ما هي الدلالة الشرعية لهذا البيت؟",
+                options: ["أن التجويد نافلة لا يثاب عليها", "أن إتقان قراءة القرآن وتجويده من أعظم القربات إلى الله", "أن القراءة لا تحتاج إلى نية", "أن البر يقتصر على الصدقة فقط"],
+                correct: 1
+            },
+            {
+                question: "أي من المصطلحات التالية استخدمه الخاقاني للتعبير عن الحركة الإعرابية \"الكسرة\"؟",
+                options: ["النصب", "الجر", "الرفع", "الخفض"],
+                correct: 1
+            },
+            {
+                question: "ماذا قصد الخاقاني بـ \"تسكين الحروف لجزمها\"؟",
+                options: ["الجزم في القول", "أن علامة الجزم الأصلية في اللغة هي السكون", "وجوب الوقف على كل كلمة مجزومة", "ترك الغنة في النون المجزومة"],
+                correct: 1
+            },
+            {
+                question: "\"فلابن عبيد الله موسى على الذي يعلمه الخير الدعاء لدى الفجر"، من هو ابن عبيد الله؟",
+                options: ["أحد القراء السبعة", "الناظم نفسه (أبو مزاحم الخاقاني)", "تلميذ الناظم المفضل", "الخليفة العباسي في ذلك الوقت"],
+                correct: 1
+            }
+        ];
+
+        // أسئلة الأصول الستة
+        const usoolQuestions = [
+            {
+                question: "ما هو تعريف الإخلاص شرعاً كما يُفهم من سياق الأصول الستة وشروحها؟",
+                options: [
+                    "أن يقصد المرء بعبادته التقرب إلى الله والتوصل إلى دار كرامته بصدق نية",
+                    "أن يقوم العبد بالعبادة والناس ينظرون إليه ليقتدوا به",
+                    "أن يلتزم العبد بالعبادات الظاهرة دون اعتبار للقصد القلبي",
+                    "أن يترك العبد العمل خوفاً من الوقوع في الرياء"
+                ],
+                correct: 0
+            },
+            {
+                question: "ما هي الحيلة الشيطانية التي ذكرها المؤلف لقلب حقيقة \"الإخلاص\" في قلوب الناس؟",
+                options: [
+                    "تصوير الإخلاص على أنه كبر وغرور",
+                    "إظهار الإخلاص في صورة \"تنقص الصالحين والتقصير في حقوقهم\"",
+                    "ادعاء أن الإخلاص لا يمكن تحقيقه إلا بترك الدنيا تماماً",
+                    "إخفاء مفهوم الإخلاص كلياً من الكتب"
+                ],
+                correct: 1
+            },
+            {
+                question: "الشرك في اللغة يأتي بمعنى \"الخلط والضم"، فما هو الشرك المخرج من الملة في الاصطلاح الشرعي؟",
+                options: [
+                    "أن يرتكب المسلم كبيرة من كبائر الذنوب كالسرقة",
+                    "أن يصرف العبد شيئاً من أنواع العبادة لغير الله كالصلاة أو الذبح لغيره",
+                    "أن يشك المرء في بعض الأمور الفقهية الفرعية",
+                    "أن يقصر العبد في أداء صلاة الجماعة في المسجد"
+                ],
+                correct: 1
+            },
+            {
+                question: "كيف وصف المؤلف وضوح آيات القرآن في بيان أصل التوحيد والإخلاص؟",
+                options: [
+                    "بأنها آيات مجملة تحتاج لعلماء الكلام لتفسيرها",
+                    "بأنها واضحة لدرجة يفهمها \"أبلد العامة\" وبوجوه شتى",
+                    "بأنها رموز لا يفهمها إلا من كوشف بالحقائق الغيبية",
+                    "بأنها خاصة بجيل الصحابة فقط ولا تنطبق على المتأخرين"
+                ],
+                correct: 1
+            },
+            {
+                question: "ما هو الربط الذي وضعه الشراح بين الإخلاص وبين النجاة من النار ودخول الجنة؟",
+                options: [
+                    "أن الإخلاص مجرد فضيلة ترفع الدرجات ولا تؤثر في أصل النجاة",
+                    "أن من مات لا يشرك بالله شيئاً دخل الجنة، ومن مات يشرك به شيئاً دخل النار",
+                    "أن النجاة تعتمد على كثرة الأعمال الصالحة فقط وإن شابها شرك أصغر",
+                    "أن دخول الجنة لا يشترط له البراءة من الشرك"
+                ],
+                correct: 1
+            },
+            {
+                question: "ما هو \"حبل الله\" الذي أمر الله بالاعتصام به في قوله (واعتصموا بحبل الله جميعاً)؟",
+                options: [
+                    "النسب والقرابة بين المسلمين",
+                    "التحالفات العسكرية ضد الأعداء",
+                    "القرآن والعهد والإسلام والجماعة",
+                    "الحدود الجغرافية للدول الإسلامية"
+                ],
+                correct: 2
+            },
+            {
+                question: "كيف وصف المؤلف الحالة الذهنية والاجتماعية لمن يأمر بالاجتماع في الدين في العصور المتأخرة؟",
+                options: [
+                    "يوصف بأنه المصلح المجدد الذي يجب اتباعه",
+                    "يوصف بأنه \"زنديق أو مجنون\"",
+                    "يحظى بتقدير الملوك والعامة",
+                    "يعتبر فقيهاً متبحراً في علوم الشريعة"
+                ],
+                correct: 1
+            },
+            {
+                question: "ما هو الضد الذي حذر الله منه في الأصل الثاني وربطه بهلاك الأمم السابقة؟",
+                options: [
+                    "الفقر والجوع",
+                    "التفرق والاختلاف في الدين",
+                    "ترك التجارة والصناعة",
+                    "قلة العلم باللغات الأجنبية"
+                ],
+                correct: 1
+            },
+            {
+                question: "ينقسم الاجتماع إلى \"اجتماع أديان\" و\"اجتماع أبدان"، فما المقصود باجتماع الأديان في هذا السياق؟",
+                options: [
+                    "أن يتواجد الناس في مكان واحد للصلاة",
+                    "أن يجتمع الناس على الحق والهدى والتوحيد والسنة وما كان عليه الصحابة",
+                    "أن تتوحد جميع الأديان في دين واحد عالمي",
+                    "أن يسود السلام بين جميع الطوائف دون النظر للعقيدة"
+                ],
+                correct: 1
+            },
+            {
+                question: "ما هي القاعدة الجاهلية التي خالفها النبي صلى الله عليه وسلم وتتعلق بالحكم على الأشياء؟",
+                options: [
+                    "قاعدة الاغترار بالأكثرية واتخاذها دليلاً على الصحة",
+                    "قاعدة الاهتمام بالشعر والأدب",
+                    "قاعدة الكرم والشجاعة",
+                    "قاعدة التجارة في مواسم الحج"
+                ],
+                correct: 0
+            },
+            {
+                question: "ما هو القيد الذي ذكره النبي صلى الله عليه وسلم في وجوب السمع والطاعة لولي الأمر؟",
+                options: [
+                    "أن يكون الحاكم من أشراف الناس فقط",
+                    "السمع والطاعة في المعروف (أي في غير معصية الله)",
+                    "أن يكون الحاكم عادلاً في كل قراراته كشرط للطاعة",
+                    "لا يوجد أي قيد، فالطاعة مطلقة في كل شيء"
+                ],
+                correct: 1
+            },
+            {
+                question: "لماذا استخدم المؤلف عبارة \"ولو كان عبداً حبشياً\" في سياق الحديث عن الإمامة؟",
+                options: [
+                    "لبيان أن الإسلام لا يفرق بين الأعراق في المناصب الإدارية فقط",
+                    "للتأكيد على وجوب الطاعة لمن استتب له الأمر أياً كان أصله ونسبه",
+                    "لأن العبيد الحبشيين كانوا هم الحكام في ذلك العصر",
+                    "كنوع من المجاز الذي لا ينطبق على الواقع"
+                ],
+                correct: 1
+            },
+            {
+                question: "ما هو الوصف الذي أطلقه السلف (مثل أبي إدريس الخولاني) على سب الإمام؟",
+                options: [
+                    "هو نوع من حرية التعبير المباحة",
+                    "هو \"الحالقة\" التي تحلق الدين",
+                    "هو معصية صغيرة لا تؤثر في إيمان الشخص",
+                    "هو واجب وطني لتقويم الحاكم"
+                ],
+                correct: 1
+            },
+            {
+                question: "كيف بين النبي صلى الله عليه وسلم أصل السمع والطاعة كما ورد في متن الرسالة؟",
+                options: [
+                    "بينه في أحاديث قليلة قد لا يحيط بها إلا المتخصصون",
+                    "بينه بياناً شائعاً ذائعاً بكل وجه من أنواع البيان شرعاً وقدراً",
+                    "ترك الأمر لاجتهاد المسلمين حسب مصالحهم الدنيوية",
+                    "بينه كأصل فرعي لا يدخل في مسائل العقيدة"
+                ],
+                correct: 1
+            },
+            {
+                question: "ما هي نتيجة طعن المرء في إمامه بحسب أثر أبي الدرداء رضي الله عنه؟",
+                options: [
+                    "زيادة الوجاهة بين الناس",
+                    "أن ذلك هو \"أول نفاق المرء\"",
+                    "تطور الأنظمة السياسية",
+                    "لا يترتب عليه أي أثر ديني"
+                ],
+                correct: 1
+            },
+            {
+                question: "أي سورة من القرآن أشار إليها المؤلف بأنها بينت أصل \"العلم والعلماء\" في بدايتها؟",
+                options: [
+                    "سورة الفاتحة",
+                    "سورة البقرة",
+                    "سورة آل عمران",
+                    "سورة المائدة"
+                ],
+                correct: 1
+            },
+            {
+                question: "ما هو التوصيف الذي ذكره المؤلف لما صار يسمى \"علماً وفقهاً\" عند أكثر الناس في عصره؟",
+                options: [
+                    "الحفظ المتقن لمتون اللغة العربية",
+                    "البدع والضلالات ولبس الحق بالباطل",
+                    "دراسة الفلك والرياضيات",
+                    "التبحر في أصول التفسير"
+                ],
+                correct: 1
+            },
+            {
+                question: "بماذا يعرف العالم الحق من غيره بحسب شروح الرسالة؟",
+                options: [
+                    "بكثرة ظهوره في المحافل وتجمهر الناس حوله",
+                    "بعمله بعلمه واستدلاله بالكتاب والسنة على فهم السلف",
+                    "بقدرته على الجدال والمناظرة بالمنطق اليوناني",
+                    "بانتمائه إلى حزب أو جماعة معينة"
+                ],
+                correct: 1
+            },
+            {
+                question: "ما هو النهي القرآني الوارد في سورة البقرة (الآية 42) والذي يتعلق بمنهج العلماء الضالين؟",
+                options: [
+                    "\"ولا تكونوا أول كافر به\"",
+                    "\"ولا تلبسوا الحق بالباطل وتكتموا الحق وأنتم تعلمون\"",
+                    "\"وأقيموا الصلاة وآتوا الزكاة\"",
+                    "\"واستعينوا بالصبر والصلاة\""
+                ],
+                correct: 1
+            },
+            {
+                question: "كيف وصف المؤلف الشخص الذي ينكر البدع والضلالات ويتمسك بالعلم الذي مدحه الله؟",
+                options: [
+                    "صار يسمى فقيهاً عالماً",
+                    "صار لا يتفوه به إلا \"زنديق أو مجنون\"",
+                    "صار يحظى بمكانة اجتماعية عالية",
+                    "صار هو المرجع المعتمد للدولة"
+                ],
+                correct: 1
+            },
+            {
+                question: "ما هو الضابط القرآني للولاية كما ورد في سورة يونس؟",
+                options: [
+                    "امتلاك القدرة على المشي على الماء والطيران",
+                    "\"الذين آمنوا وكانوا يتقون\"",
+                    "الاعتزال في الصوامع والكهوف",
+                    "الغنى والجاه والنسب الشريف"
+                ],
+                correct: 1
+            },
+            {
+                question: "تسمى آية آل عمران \"آية الاختبار"، فما هي هذه الآية؟",
+                options: [
+                    "\"قل إن كنتم تحبون الله فاتبعوني يحببكم الله\"",
+                    "\"يا أيها الذين آمنوا اتقوا الله حق تقاته\"",
+                    "\"إن الدين عند الله الإسلام\"",
+                    "\"ولله على الناس حج البيت\""
+                ],
+                correct: 0
+            },
+            {
+                question: "ما هي صفات القوم الذين يأتي بهم الله كما ورد في آية سورة المائدة (الآية 54)؟",
+                options: [
+                    "يحبهم ويحبونه، أذلة على المؤمنين أعزة على الكافرين، يجاهدون في سبيل الله",
+                    "يتركون العمل الدنيوي ويتفرغون للذكر فقط",
+                    "يتبعون الآراء والعقول ويقدمونها على الوحي",
+                    "يخافون لومة اللائم في كل مجلس"
+                ],
+                correct: 0
+            },
+            {
+                question: "ما هي الشبهة التي وضعها الشيطان حول صفة الولي عند المتأخرين؟",
+                options: [
+                    "أن الولي لابد أن يكون عالماً باللغة العربية",
+                    "أن الولي لابد أن يترك اتباع الرسل، فمن اتبعهم فليس منهم",
+                    "أن الولي هو من يحفظ القرآن فقط",
+                    "أن الولي لا يمكن أن يكون من العوام"
+                ],
+                correct: 1
+            },
+            {
+                question: "من هم \"المتألهون\" الذين حذر منهم المؤلف في سياق حديثه عن الأولياء؟",
+                options: [
+                    "الذين يعبدون الله على جهل",
+                    "المنافقون والفجار المتشبهون بأولياء الله من أعدائه",
+                    "الفلاسفة الذين ينكرون وجود الله",
+                    "علماء الطبيعة والكون"
+                ],
+                correct: 1
+            },
+            {
+                question: "ما هي الدعوى التي يروجها الشيطان ليصرف الناس عن طلب الهدى من الكتاب والسنة؟",
+                options: [
+                    "أن القرآن والسنة قد نُسخا كلياً",
+                    "أنهما لا يعرفهما إلا المجتهد المطلق ذو الأوصاف المستحيلة",
+                    "أن اللغة العربية لم تعد صالحة لفهم النصوص",
+                    "أن الوحي خاص بجزيرة العرب فقط"
+                ],
+                correct: 1
+            },
+            {
+                question: "بماذا وصف المؤلف أوصاف المجتهد التي وضعها المتكلمون؟",
+                options: [
+                    "أوصافاً دقيقة تضمن جودة الاستنباط",
+                    "أوصافاً لعلها لا توجد تامة في أبي بكر وعمر",
+                    "أوصافاً سهلة يمكن لأي طالب علم تحقيقها",
+                    "أوصافاً لم يذكرها أحد من قبل"
+                ],
+                correct: 1
+            },
+            {
+                question: "ما هو الحكم الذي يصدره أصحاب هذه الشبهة على من يطلب الهدى مباشرة من الكتاب والسنة؟",
+                options: [
+                    "يعتبرونه باحثاً مجتهداً مأجوراً",
+                    "يعتبرونه إما زنديقاً أو مجنوناً لأجل صعوبة فهمهما",
+                    "يشجعونه على مواصلة البحث",
+                    "يعتبرونه متبعاً لمنهج السلف"
+                ],
+                correct: 1
+            },
+            {
+                question: "كيف بين الله سبحانه الرد على هذه الشبهة \"الملعونة\" بحسب نص الرسالة؟",
+                options: [
+                    "ببيان وجوه شتى شرعاً وقدراً وخلقاً وأمراً بلغت حد الضروريات",
+                    "بإنزال آيات جديدة ترد على هؤلاء",
+                    "بتكليف الملائكة بشرح القرآن للناس",
+                    "لم يبين الرد عليها وتركها لعقول الناس"
+                ],
+                correct: 0
+            },
+            {
+                question: "ما هو البديل الذي وضعه الشيطان للناس بعد أن صرفهم عن القرآن والسنة؟",
+                options: [
+                    "اتباع العلوم التجريبية والمادية",
+                    "اتباع الآراء والأهواء المتفرقة المختلفة",
+                    "الصمت وعدم التحدث في أمور الدين",
+                    "الرجوع إلى كتب الفلاسفة اليونان فقط"
+                ],
+                correct: 1
+            }
+        ];
+
+        // معالجة تسجيل الدخول
+        async function handleLogin() {
+            const fullName = document.getElementById('fullName').value.trim();
+            
+            if (!fullName) {
+                showToast('⚠️ يرجى إدخال الاسم الرباعي');
+                return;
+            }
+
+            const nameParts = fullName.split(/\s+/);
+            if (nameParts.length < 4) {
+                showToast('⚠️ يرجى إدخال الاسم رباعياً كاملاً');
+                return;
+            }
+
+            currentUser = {
+                name: fullName,
+                loginTime: new Date()
+            };
+
+            // التحقق مما إذا كان مشرفاً
+            if (fullName === 'منتصر محمد راغب يونس') {
+                isAdmin = true;
+                document.getElementById('adminPanel').classList.remove('hidden');
+                loadAdminSections();
+            }
+
+            // حفظ بيانات المستخدم
+            await saveUserData();
+
+            // عرض الصفحة الرئيسية
+            showHomePage();
+            loadQuizzes();
+        }
+
+        // حفظ بيانات المستخدم في Firestore
+        async function saveUserData() {
+            try {
+                await db.collection('users').doc(currentUser.name).set({
+                    name: currentUser.name,
+                    loginTime: firebase.firestore.FieldValue.serverTimestamp(),
+                    isAdmin: isAdmin
+                }, { merge: true });
+            } catch (error) {
+                console.error('Error saving user data:', error);
+            }
+        }
+
+        // عرض الصفحة الرئيسية
+        function showHomePage() {
+            hideAllPages();
+            document.getElementById('homePage').classList.remove('hidden');
+            document.getElementById('welcomeText').textContent = `مرحباً، ${currentUser.name}`;
+            
+            if (isAdmin) {
+                document.getElementById('adminPanel').classList.remove('hidden');
+                loadAdminSections();
+            }
+            
+            loadQuizzes();
+            loadStudentStats();
+        }
+
+        // إخفاء جميع الصفحات
+        function hideAllPages() {
+            const pages = ['loginPage', 'homePage', 'quizPage', 'resultPage', 'manageQuestionsPage', 'studentsResultsPage'];
+            pages.forEach(page => {
+                document.getElementById(page).classList.add('hidden');
+            });
+        }
+
+        // تحميل الاختبارات
+        async function loadQuizzes() {
+            const quizzesList = document.getElementById('quizzesList');
+            quizzesList.innerHTML = '<p style="text-align: center; color: #666;">جاري تحميل الاختبارات...</p>';
+
+            try {
+                // جلب الأقسام من Firestore
+                const sectionsSnapshot = await db.collection('sections').get();
+                const sections = [];
+                
+                sectionsSnapshot.forEach(doc => {
+                    sections.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+
+                // إضافة الاختبارات الثابتة
+                const allQuizzes = [
+                    {
+                        id: 'khaganiya',
+                        name: 'اختبار الخاقانية',
+                        questions: khaganiyaQuestions,
+                        isFixed: true
+                    },
+                    {
+                        id: 'usool',
+                        name: 'اختبار الأصول الستة',
+                        questions: usoolQuestions,
+                        isFixed: true
+                    },
+                    ...sections
+                ];
+
+                if (allQuizzes.length === 0) {
+                    quizzesList.innerHTML = '<p style="text-align: center; color: #666;">لا توجد اختبارات متاحة</p>';
+                    return;
+                }
+
+                quizzesList.innerHTML = '';
+                
+                for (const quiz of allQuizzes) {
+                    const quizCard = document.createElement('div');
+                    quizCard.className = 'quiz-card';
+                    
+                    // التحقق مما إذا كان القسم جديداً (أضيف خلال آخر 5 أيام)
+                    const isNew = quiz.createdAt && 
+                                  (new Date() - quiz.createdAt.toDate()) < (5 * 24 * 60 * 60 * 1000);
+                    
+                    let progressHTML = '';
+                    if (!quiz.isFixed) {
+                        const progress = getUserProgress(quiz.id);
+                        progressHTML = `
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${progress}%"></div>
+                            </div>
+                            <p style="font-size: 12px; color: #666; margin-top: 5px;">
+                                ${progress}% مكتمل
+                            </p>
+                        `;
+                    }
+                    
+                    quizCard.innerHTML = `
+                        ${isNew ? '<span class="new-badge">جديد - 5 أيام</span>' : ''}
+                        <h3>${quiz.name}</h3>
+                        <p style="color: #666;">${quiz.questions.length} سؤال</p>
+                        ${progressHTML}
+                        ${isAdmin ? `
+                            <div style="margin-top: 15px; display: flex; gap: 10px;">
+                                <button class="btn btn-secondary" onclick="event.stopPropagation(); manageQuestions('${quiz.id}')" style="padding: 8px 15px; font-size: 14px;">✏️ تعديل</button>
+                                <button class="btn" onclick="event.stopPropagation(); viewStudentsResults('${quiz.id}')" style="padding: 8px 15px; font-size: 14px;">📊 النتائج</button>
+                                ${!quiz.isFixed ? `<button class="btn btn-danger" onclick="event.stopPropagation(); deleteSection('${quiz.id}')" style="padding: 8px 15px; font-size: 14px;">🗑️ حذف</button>` : ''}
+                            </div>
+                        ` : ''}
+                    `;
+                    
+                    if (!isAdmin) {
+                        quizCard.onclick = () => startQuiz(quiz);
+                    }
+                    
+                    quizzesList.appendChild(quizCard);
+                }
+
+                // تحميل قائمة الطلاب المتوقفين
+                if (isAdmin) {
+                    loadStoppedStudents();
+                }
+            } catch (error) {
+                console.error('Error loading quizzes:', error);
+                quizzesList.innerHTML = '<p style="text-align: center; color: #f44336;">حدث خطأ في تحميل الاختبارات</p>';
+            }
+        }
+
+        // الحصول على تقدم المستخدم
+        function getUserProgress(quizId) {
+            const key = `progress_${currentUser.name}_${quizId}`;
+            return localStorage.getItem(key) || 0;
+        }
+
+        // حفظ تقدم المستخدم
+        function saveUserProgress(quizId, progress) {
+            const key = `progress_${currentUser.name}_${quizId}`;
+            localStorage.setItem(key, progress);
+        }
+
+        // بدء الاختبار
+        function startQuiz(quiz) {
+            currentQuiz = quiz;
+            currentQuestionIndex = 0;
+            userAnswers = {};
+            
+            // استئناف من حيث توقف المستخدم
+            const savedIndex = localStorage.getItem(`currentQuestion_${currentUser.name}_${quiz.id}`);
+            if (savedIndex !== null) {
+                currentQuestionIndex = parseInt(savedIndex);
+            }
+            
+            // استعادة الإجابات المحفوظة
+            const savedAnswers = localStorage.getItem(`answers_${currentUser.name}_${quiz.id}`);
+            if (savedAnswers) {
+                userAnswers = JSON.parse(savedAnswers);
+            }
+
+            hideAllPages();
+            document.getElementById('quizPage').classList.remove('hidden');
+            document.getElementById('totalQuestions').textContent = quiz.questions.length;
+            
+            startTimer();
+            showQuestion(currentQuestionIndex);
+            
+            // حفظ وقت البدء
+            if (!startTime) {
+                startTime = new Date();
+                saveStartTime(quiz.id);
+            }
+        }
+
+        // حفظ وقت البدء
+        async function saveStartTime(quizId) {
+            try {
+                await db.collection('quizSessions').add({
+                    userName: currentUser.name,
+                    quizId: quizId,
+                    startTime: firebase.firestore.FieldValue.serverTimestamp(),
+                    status: 'started'
+                });
+            } catch (error) {
+                console.error('Error saving start time:', error);
+            }
+        }
+
+        // عرض السؤال
+        function showQuestion(index) {
+            const question = currentQuiz.questions[index];
+            document.getElementById('currentQuestionNum').textContent = index + 1;
+            document.getElementById('questionText').textContent = question.question;
+            
+            const optionsContainer = document.getElementById('optionsContainer');
+            optionsContainer.innerHTML = '';
+            
+            question.options.forEach((option, i) => {
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'option';
+                optionDiv.textContent = option;
+                
+                if (userAnswers[index] === i) {
+                    optionDiv.classList.add('selected');
+                }
+                
+                optionDiv.onclick = () => selectOption(i);
+                optionsContainer.appendChild(optionDiv);
+            });
+            
+            updateProgressBar();
+            updateNavigationButtons();
+            
+            // حفظ التقدم الحالي
+            saveUserProgress(currentQuiz.id, ((index + 1) / currentQuiz.questions.length) * 100);
+            localStorage.setItem(`currentQuestion_${currentUser.name}_${currentQuiz.id}`, index);
+            localStorage.setItem(`answers_${currentUser.name}_${currentQuiz.id}`, JSON.stringify(userAnswers));
+        }
+
+        // اختيار إجابة
+        function selectOption(optionIndex) {
+            const options = document.querySelectorAll('.option');
+            options.forEach(opt => opt.classList.remove('selected'));
+            
+            userAnswers[currentQuestionIndex] = optionIndex;
+            options[optionIndex].classList.add('selected');
+            
+            // تشغيل تأثير الاحتفال للإجابة الصحيحة
+            if (optionIndex === currentQuiz.questions[currentQuestionIndex].correct) {
+                options[optionIndex].classList.add('correct');
+                createConfetti(5);
+            } else {
+                options[optionIndex].classList.add('incorrect');
+            }
+            
+            localStorage.setItem(`answers_${currentUser.name}_${currentQuiz.id}`, JSON.stringify(userAnswers));
+        }
+
+        // السؤال التالي
+        function nextQuestion() {
+            if (currentQuestionIndex < currentQuiz.questions.length - 1) {
+                currentQuestionIndex++;
+                showQuestion(currentQuestionIndex);
+            }
+        }
+
+        // السؤال السابق
+        function prevQuestion() {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                showQuestion(currentQuestionIndex);
+            }
+        }
+
+        // تحديث أزرار التنقل
+        function updateNavigationButtons() {
+            document.getElementById('prevBtn').disabled = currentQuestionIndex === 0;
+            
+            if (currentQuestionIndex === currentQuiz.questions.length - 1) {
+                document.getElementById('nextBtn').classList.add('hidden');
+                document.getElementById('submitBtn').classList.remove('hidden');
+            } else {
+                document.getElementById('nextBtn').classList.remove('hidden');
+                document.getElementById('submitBtn').classList.add('hidden');
+            }
+        }
+
+        // تحديث شريط التقدم
+        function updateProgressBar() {
+            const progress = ((currentQuestionIndex + 1) / currentQuiz.questions.length) * 100;
+            document.getElementById('progressBar').style.width = `${progress}%`;
+        }
+
+        // بدء المؤقت
+        function startTimer() {
+            startTime = new Date();
+            timerInterval = setInterval(() => {
+                const elapsed = Math.floor((new Date() - startTime) / 1000);
+                const minutes = Math.floor(elapsed / 60);
+                const seconds = elapsed % 60;
+                document.getElementById('timer').textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        // إيقاف المؤقت
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        // إنهاء الاختبار
+        async function submitQuiz() {
+            stopTimer();
+            
+            // حساب النتيجة
+            let correctCount = 0;
+            Object.keys(userAnswers).forEach(index => {
+                if (userAnswers[index] === currentQuiz.questions[index].correct) {
+                    correctCount++;
+                }
+            });
+            
+            const score = Math.round((correctCount / currentQuiz.questions.length) * 100);
+            
+            // حفظ النتيجة
+            await saveQuizResult(score, correctCount);
+            
+            // عرض النتائج
+            showResults(score, correctCount);
+            
+            // تنظيف البيانات المحفوظة
+            localStorage.removeItem(`currentQuestion_${currentUser.name}_${currentQuiz.id}`);
+            localStorage.removeItem(`answers_${currentUser.name}_${currentQuiz.id}`);
+            localStorage.removeItem(`startTime_${currentUser.name}_${currentQuiz.id}`);
+        }
+
+        // حفظ نتيجة الاختبار
+        async function saveQuizResult(score, correctCount) {
+            try {
+                await db.collection('results').add({
+                    userName: currentUser.name,
+                    quizId: currentQuiz.id,
+                    quizName: currentQuiz.name,
+                    score: score,
+                    correctCount: correctCount,
+                    totalQuestions: currentQuiz.questions.length,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                // تحديث حالة الجلسة
+                const sessionsRef = db.collection('quizSessions')
+                    .where('userName', '==', currentUser.name)
+                    .where('quizId', '==', currentQuiz.id)
+                    .orderBy('startTime', 'desc')
+                    .limit(1);
+                
+                const sessions = await sessionsRef.get();
+                sessions.forEach(doc => {
+                    db.collection('quizSessions').doc(doc.id).update({
+                        status: 'completed',
+                        score: score
+                    });
+                });
+            } catch (error) {
+                console.error('Error saving result:', error);
+            }
+        }
+
+        // عرض النتائج
+        function showResults(score, correctCount) {
+            hideAllPages();
+            document.getElementById('resultPage').classList.remove('hidden');
+            
+            document.getElementById('finalScore').textContent = `${score}%`;
+            document.getElementById('correctAnswers').textContent = correctCount;
+            document.getElementById('wrongAnswers').textContent = currentQuiz.questions.length - correctCount;
+            
+            const message = score >= 90 ? '🌟 ممتاز!' : 
+                           score >= 75 ? '👍 جيد جداً!' : 
+                           score >= 50 ? '📚 جيد، استمر في التعلم!' : 
+                           '💪 حاول مرة أخرى!';
+            
+            document.getElementById('resultMessage').textContent = message;
+            
+            if (score >= 75) {
+                createConfetti(50);
+            }
+            
+            // إظهار زر إعادة الاختبار فقط للطلاب
+            document.getElementById('retakeBtn').classList.toggle('hidden', isAdmin);
+        }
+
+        // إنشاء تأثير الاحتفال
+        function createConfetti(count) {
+            const colors = ['#f00', '#0f0', '#00f', '#ff0', '#0ff', '#f0f'];
+            
+            for (let i = 0; i < count; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                document.body.appendChild(confetti);
+                
+                setTimeout(() => confetti.remove(), 4000);
+            }
+        }
+
+        // إعادة الاختبار
+        function retakeQuiz() {
+            startQuiz(currentQuiz);
+        }
+
+        // عرض الصفحة الرئيسية
+        function showHomePage() {
+            hideAllPages();
+            document.getElementById('homePage').classList.remove('hidden');
+            loadQuizzes();
+            loadStudentStats();
+        }
+
+        // تحميل إحصائيات الطالب
+        async function loadStudentStats() {
+            try {
+                const resultsRef = db.collection('results')
+                    .where('userName', '==', currentUser.name);
+                
+                const results = await resultsRef.get();
+                
+                let completedCount = 0;
+                let totalScore = 0;
+                
+                results.forEach(doc => {
+                    const data = doc.data();
+                    completedCount++;
+                    totalScore += data.score;
+                });
+                
+                const averageScore = completedCount > 0 ? Math.round(totalScore / completedCount) : 0;
+                
+                document.getElementById('completedCount').textContent = completedCount;
+                document.getElementById('averageScore').textContent = `${averageScore}%`;
+                
+                document.getElementById('studentStats').classList.remove('hidden');
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        // رفع ملف JSON
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    if (!data.name || !data.questions) {
+                        showToast('⚠️ ملف JSON غير صحيح. يجب أن يحتوي على name و questions');
+                        return;
+                    }
+                    
+                    // إضافة القسم الجديد
+                    await db.collection('sections').add({
+                        name: data.name,
+                        questions: data.questions,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        createdBy: currentUser.name
+                    });
+                    
+                    showToast('✅ تم إضافة القسم بنجاح!');
+                    loadQuizzes();
+                    loadAdminSections();
+                } catch (error) {
+                    showToast('⚠️ خطأ في قراءة ملف JSON');
+                    console.error(error);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // تحميل أقسام المشرف
+        async function loadAdminSections() {
+            try {
+                const sectionsSnapshot = await db.collection('sections').get();
+                const sectionsList = document.getElementById('adminSectionsList');
+                
+                if (sectionsSnapshot.empty) {
+                    sectionsList.innerHTML = '<p style="color: #666;">لا توجد أقسام مخصصة</p>';
+                    return;
+                }
+                
+                sectionsList.innerHTML = '';
+                sectionsSnapshot.forEach(doc => {
+                    const section = doc.data();
+                    const div = document.createElement('div');
+                    div.className = 'quiz-card';
+                    div.innerHTML = `
+                        <h3>${section.name}</h3>
+                        <p style="color: #666;">${section.questions.length} سؤال</p>
+                        <div style="margin-top: 10px; display: flex; gap: 10px;">
+                            <button class="btn btn-secondary" onclick="manageQuestions('${doc.id}')" style="padding: 8px 15px; font-size: 14px;">✏️ تعديل</button>
+                            <button class="btn btn-danger" onclick="deleteSection('${doc.id}')" style="padding: 8px 15px; font-size: 14px;">🗑️ حذف</button>
+                        </div>
+                    `;
+                    sectionsList.appendChild(div);
+                });
+                
+                document.getElementById('adminActions').classList.remove('hidden');
+            } catch (error) {
+                console.error('Error loading admin sections:', error);
+            }
+        }
+
+        // حذف قسم
+        async function deleteSection(sectionId) {
+            if (!confirm('هل أنت متأكد من حذف هذا القسم؟')) return;
+            
+            try {
+                await db.collection('sections').doc(sectionId).delete();
+                showToast('✅ تم حذف القسم بنجاح');
+                loadQuizzes();
+                loadAdminSections();
+            } catch (error) {
+                showToast('⚠️ حدث خطأ في الحذف');
+                console.error(error);
+            }
+        }
+
+        // إدارة الأسئلة
+        async function manageQuestions(quizId) {
+            hideAllPages();
+            document.getElementById('manageQuestionsPage').classList.remove('hidden');
+            
+            let quiz;
+            if (quizId === 'khaganiya') {
+                quiz = { id: 'khaganiya', name: 'اختبار الخاقانية', questions: [...khaganiyaQuestions] };
+            } else if (quizId === 'usool') {
+                quiz = { id: 'usool', name: 'اختبار الأصول الستة', questions: [...usoolQuestions] };
+            } else {
+                const doc = await db.collection('sections').doc(quizId).get();
+                quiz = { id: quizId, ...doc.data() };
+            }
+            
+            currentQuiz = quiz;
+            document.getElementById('manageTitle').textContent = `إدارة أسئلة: ${quiz.name}`;
+            
+            renderQuestionsEditor();
+        }
+
+        // عرض محرر الأسئلة
+        function renderQuestionsEditor() {
+            const container = document.getElementById('questionsEditor');
+            container.innerHTML = '';
+            
+            currentQuiz.questions.forEach((q, index) => {
+                const div = document.createElement('div');
+                div.className = 'quiz-card';
+                div.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h4>سؤال ${index + 1}</h4>
+                        <button class="btn btn-danger" onclick="removeQuestion(${index})" style="padding: 5px 15px; font-size: 12px; width: auto;">🗑️ حذف</button>
+                    </div>
+                    <div class="form-group">
+                        <label>نص السؤال</label>
+                        <input type="text" value="${q.question}" onchange="updateQuestion(${index}, 'question', this.value)">
+                    </div>
+                    <div class="form-group">
+                        <label>الخيارات (الإجابة الصحيحة محددة)</label>
+                    </div>
+                    ${q.options.map((opt, i) => `
+                        <div class="form-group" style="display: flex; gap: 10px; align-items: center;">
+                            <input type="radio" name="correct_${index}" ${i === q.correct ? 'checked' : ''} onchange="updateCorrectAnswer(${index}, ${i})">
+                            <input type="text" value="${opt}" onchange="updateOption(${index}, ${i}, this.value)" style="flex: 1;">
+                        </div>
+                    `).join('')}
+                    <button class="btn btn-secondary" onclick="addOption(${index})" style="margin-top: 10px; padding: 8px 15px; font-size: 14px; width: auto;">+ إضافة خيار</button>
+                `;
+                container.appendChild(div);
+            });
+            
+            // زر إضافة سؤال جديد
+            const addBtn = document.createElement('button');
+            addBtn.className = 'btn btn-success';
+            addBtn.textContent = '+ إضافة سؤال جديد';
+            addBtn.style.marginTop = '20px';
+            addBtn.onclick = addNewQuestion;
+            container.appendChild(addBtn);
+        }
+
+        // تحديث سؤال
+        function updateQuestion(index, field, value) {
+            currentQuiz.questions[index][field] = value;
+        }
+
+        // تحديث خيار
+        function updateOption(questionIndex, optionIndex, value) {
+            currentQuiz.questions[questionIndex].options[optionIndex] = value;
+        }
+
+        // تحديث الإجابة الصحيحة
+        function updateCorrectAnswer(questionIndex, optionIndex) {
+            currentQuiz.questions[questionIndex].correct = optionIndex;
+        }
+
+        // إضافة خيار جديد
+        function addOption(questionIndex) {
+            currentQuiz.questions[questionIndex].options.push('خيار جديد');
+            renderQuestionsEditor();
+        }
+
+        // إزالة سؤال
+        function removeQuestion(index) {
+            currentQuiz.questions.splice(index, 1);
+            renderQuestionsEditor();
+        }
+
+        // إضافة سؤال جديد
+        function addNewQuestion() {
+            currentQuiz.questions.push({
+                question: 'سؤال جديد',
+                options: ['خيار 1', 'خيار 2', 'خيار 3', 'خيار 4'],
+                correct: 0
+            });
+            renderQuestionsEditor();
+        }
+
+        // حفظ الأسئلة
+        async function saveQuestions() {
+            try {
+                if (currentQuiz.isFixed) {
+                    showToast('⚠️ لا يمكن تعديل الاختبارات الثابتة');
+                    return;
+                }
+                
+                await db.collection('sections').doc(currentQuiz.id).update({
+                    questions: currentQuiz.questions
+                });
+                
+                showToast('✅ تم حفظ التغييرات بنجاح');
+                showHomePage();
+            } catch (error) {
+                showToast('⚠️ حدث خطأ في الحفظ');
+                console.error(error);
+            }
+        }
+
+        // عرض نتائج الطلاب
+        async function viewStudentsResults(quizId) {
+            hideAllPages();
+            document.getElementById('studentsResultsPage').classList.remove('hidden');
+            
+            const tbody = document.getElementById('studentsResultsBody');
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">جاري التحميل...</td></tr>';
+            
+            try {
+                let query;
+                if (quizId) {
+                    query = db.collection('results').where('quizId', '==', quizId);
+                } else {
+                    query = db.collection('results');
+                }
+                
+                const results = await query.orderBy('score', 'desc').get();
+                
+                if (results.empty) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">لا توجد نتائج بعد</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = '';
+                results.forEach(doc => {
+                    const data = doc.data();
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${data.userName}</td>
+                        <td>${data.score}%</td>
+                        <td>${data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString('ar-EG') : '-'}</td>
+                        <td>
+                            <button class="btn btn-danger" onclick="deleteResult('${doc.id}')" style="padding: 5px 10px; font-size: 12px; width: auto;">🗑️</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error loading results:', error);
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #f44336;">حدث خطأ في التحميل</td></tr>';
+            }
+        }
+
+        // حذف نتيجة
+        async function deleteResult(resultId) {
+            if (!confirm('هل أنت متأكد من حذف هذه النتيجة؟')) return;
+            
+            try {
+                await db.collection('results').doc(resultId).delete();
+                showToast('✅ تم حذف النتيجة بنجاح');
+                viewStudentsResults(currentQuiz ? currentQuiz.id : null);
+            } catch (error) {
+                showToast('⚠️ حدث خطأ في الحذف');
+                console.error(error);
+            }
+        }
+
+        // تحميل الطلاب المتوقفين
+        async function loadStoppedStudents() {
+            try {
+                const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+                
+                const sessionsRef = db.collection('quizSessions')
+                    .where('status', '==', 'started')
+                    .where('startTime', '<=', fiveMinutesAgo);
+                
+                const sessions = await sessionsRef.get();
+                
+                if (sessions.empty) {
+                    document.getElementById('stoppedStudents').classList.add('hidden');
+                    return;
+                }
+                
+                const stoppedList = document.getElementById('stoppedList');
+                stoppedList.innerHTML = '';
+                
+                sessions.forEach(doc => {
+                    const data = doc.data();
+                    const div = document.createElement('div');
+                    div.className = 'quiz-card';
+                    div.innerHTML = `
+                        <h4>${data.userName}</h4>
+                        <p style="color: #666;">اختبار: ${data.quizId}</p>
+                        <p style="color: #666; font-size: 12px;">منذ: ${new Date(data.startTime.toDate()).toLocaleTimeString('ar-EG')}</p>
+                    `;
+                    stoppedList.appendChild(div);
+                });
+                
+                document.getElementById('stoppedStudents').classList.remove('hidden');
+            } catch (error) {
+                console.error('Error loading stopped students:', error);
+            }
+        }
+
+        // حفظ وقت البدء للاستمرار لاحقاً
+        function saveStartTime(quizId) {
+            localStorage.setItem(`startTime_${currentUser.name}_${quizId}`, new Date().toISOString());
+        }
+
+        // عرض رسالة Toast
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // تهيئة التطبيق عند التحميل
+        window.addEventListener('DOMContentLoaded', () => {
+            // التحقق من وجود جلسة محفوظة
+            const savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                if (currentUser.name === 'منتصر محمد راغب يونس') {
+                    isAdmin = true;
+                }
+                showHomePage();
+                loadQuizzes();
+            }
+        });
+
+        // حفظ المستخدم الحالي في localStorage
+        function saveCurrentUser() {
+            if (currentUser) {
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            }
+        }
+    </script>
+</body>
+</html>

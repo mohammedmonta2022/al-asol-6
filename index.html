@@ -99,6 +99,11 @@
             target.classList.remove('hidden');
             target.classList.add('animate__animated', 'animate__fadeIn');
         };
+        
+        // تصدير الدوال للنطاق العام
+        window.showView = showView;
+        window.renderQuiz = renderQuiz;
+        window.renderResult = renderResult;
 
         window.onload = async () => {
             await signInAnonymously(auth);
